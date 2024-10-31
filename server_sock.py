@@ -1,4 +1,5 @@
 import socket
+import time
 
 
 def server_program(host: str = '127.0.0.1', port: int = 5002):
@@ -14,16 +15,16 @@ def server_program(host: str = '127.0.0.1', port: int = 5002):
                 with conn:
                     print("Подключено к:", address)
                     while True:
-                        print('2')
                         data = conn.recv(1024)
-                        print('3')
                         if not data:
                             print("No data received. Closing connection.")
                             break
+
                         print(f"Received from client: {data.decode()}")
 
                         response = f"Message received: {data.decode()[-2:]}"
                         conn.sendall(response.encode())
+                        time.sleep(0.1)
             except Exception as e:
                 print(f"An error occurred: {e}")
             finally:
