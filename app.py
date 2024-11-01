@@ -1,47 +1,19 @@
-import logging
 import threading
-import time
 import uuid
-import socket
 
 import redis
 from dash import Dash, dcc, html, Input, Output, State
 from flask import Flask
+
+from client_sock import client_program
 
 # Создаем сервер Flask
 server = Flask(__name__)
 server.secret_key = 'your_secret_key'  # Задаем секретный ключ для сессий
 
 redis_db = redis.Redis(host='127.0.0.1', port=6379, db=0)
+redis_cache_result = redis.Redis(host='127.0.0.1', port=6379, db=1)
 
-
-def client_program(host: str = '127.0.0.1', port: int = 5002):
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            client_socket.connect((host, port))
-            while True:
-
-                msg = redis_db.lpop('message_queue')
-                if msg:
-                    uuid_from_queue = msg.decode('utf-8')[:36]
-                    message_to_send = msg.decode('utf-8')[36:]
-                    if not uuid_from_queue == '000000000000000000000000000000000000':
-                        print(f'Отправка сообщения: {message_to_send}')
-
-                    client_socket.sendall(message_to_send.encode('utf-8'))
-                    if not uuid_from_queue == '000000000000000000000000000000000000':
-                        print(f'Сообщение отправлено: {message_to_send}')
-
-                    recv_msg = client_socket.recv(1024)
-                    if not uuid_from_queue == '000000000000000000000000000000000000':
-                        print(f"Сообщение от сервера для {uuid_from_queue}:", f'{recv_msg.decode("utf-8")}\n')
-                    time.sleep(1)
-
-    except Exception as err:
-        print("Произошла ошибка: %s", err)
-
-
-# threading.Thread(target=client_program, daemon=True).start()
 
 # Создаем приложение Dash
 app = Dash(__name__, server=server)
@@ -49,7 +21,6 @@ app = Dash(__name__, server=server)
 # Определяем макет приложения
 app.layout = html.Div([
     dcc.Store(id='uuid-store'),  # Хранение UUID
-    dcc.Input(id='input-text', type='text', placeholder='Введите текст для перевода...'),
     dcc.Dropdown(
         id='language-dropdown',
         options=[
@@ -58,6 +29,20 @@ app.layout = html.Div([
             {'label': 'Испанский', 'value': 'es'}
         ],
         placeholder='Выберите язык'
+    ),
+    dcc.Textarea(id='text_in',
+                 value='',
+                 placeholder='Введите текст здесь...',
+                 style={'width': '100%', 'height': 200}),
+    dcc.Textarea(id='text_out',
+                 value='',
+                 placeholder='Здесь будет обработанный',
+                 readOnly=True,
+                 style={'width': '100%', 'height': 200}),
+    dcc.Interval(
+        id='interval-component',
+        interval=1000,  # Интервал в миллисекундах (1000 мс = 1 секунда)
+        n_intervals=0  # Начальное количество интервалов
     ),
     html.Button('', id='translate-button',
                 style={
@@ -74,7 +59,7 @@ app.layout = html.Div([
                     'background-size': 'cover',
                     'background-repeat': 'no-repeat'
                 }),
-    html.Div(id='output-text')
+    html.Div(id='output-text'),
 ])
 
 
@@ -93,25 +78,43 @@ def generate_uuid(existing_uuid):
 @app.callback(
     Output('output-text', 'children'),
     Input('translate-button', 'n_clicks'),
-    State('input-text', 'value'),
     State('language-dropdown', 'value'),
-    State('uuid-store', 'data')
+    State('uuid-store', 'data'),
+    State('text_in', 'value')
 )
-def translate_text(n_clicks, input_text, target_language, uuid_value):
+def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in_textarea: str) -> str:
     if n_clicks is None:
         return "Введите текст и выберите язык для перевода."
 
-    if target_language:
-        msg = f'{uuid_value}Переведенный текст на {target_language}: {input_text} на {target_language}'
-        redis_db.rpush('message_queue', msg)
-        return msg[36:]
+    if target_language and text_in_textarea:
+        redis_cache_result.delete(uuid_value)
+
+        paragraphs = text_in_textarea.split('\n')
+        for paragraph in paragraphs:
+            redis_db.rpush('message_queue', f'{uuid_value}{paragraph}')
+        return 'Отправлено в очередь'
     return "Пожалуйста, выберите язык."
+
+
+@app.callback(
+    Output('text_out', 'value'),
+    Input('interval-component', 'n_intervals'),
+    State('uuid-store', 'data')
+)
+def show_result_in_cache(n_inter: int, uuid_data: str) -> str | None:
+    if uuid_data:
+        result_session = redis_cache_result.get(uuid_data)
+        if result_session:
+            return result_session.decode('utf-8')
+        else:
+            return None
+    else:
+        return None
 
 
 # Запускаем сервер
 if __name__ == '__main__':
     # Обязательно нужна для калибровки
     redis_db.rpush('message_queue', f'000000000000000000000000000000000000 ')
-
-    threading.Thread(target=client_program).start()
+    threading.Thread(target=client_program, args=(redis_db, redis_cache_result)).start()
     app.run_server(debug=True)

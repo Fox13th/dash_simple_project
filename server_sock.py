@@ -22,7 +22,7 @@ def server_program(host: str = '127.0.0.1', port: int = 5002):
 
                         print(f"Received from client: {data.decode()}")
 
-                        response = f"Message received: {data.decode()[-2:]}"
+                        response = f"Message received: {data.decode()}"
                         conn.sendall(response.encode())
                         time.sleep(0.1)
             except Exception as e:
