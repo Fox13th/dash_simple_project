@@ -4,16 +4,15 @@ import time
 
 import redis
 
-DATA_CACHE_EXPIRE_IN_SECONDS = 60 * 5
+from core import config
+
+settings = config.get_settings()
 
 
-def client_program(redis_db: redis.Redis,
-                   redis_cache_result: redis.Redis,
-                   host: str = '127.0.0.1',
-                   port: int = 5002):
+def client_program(redis_db: redis.Redis, redis_cache_result: redis.Redis):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            client_socket.connect((host, port))
+            client_socket.connect((settings.socket_host, settings.socket_port))
             while True:
 
                 msg = redis_db.lpop('message_queue')
@@ -40,7 +39,7 @@ def client_program(redis_db: redis.Redis,
                         else:
                             res_value = recv_msg.decode("utf-8")
 
-                        redis_cache_result.set(uuid_from_queue, res_value, DATA_CACHE_EXPIRE_IN_SECONDS)
+                        redis_cache_result.set(uuid_from_queue, res_value, settings.redis_expiration)
 
                     time.sleep(1)
 
