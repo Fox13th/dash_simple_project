@@ -5,6 +5,7 @@ import redis
 from dash import Dash, dcc, html, Input, Output, State
 from flask import Flask
 
+from services.converters import PDF2DOCX
 from sockets.client_sock import client_program
 from core import config
 
@@ -18,27 +19,65 @@ server.secret_key = 'your_secret_key'  # Задаем секретный клю�
 
 app = Dash(__name__, server=server, prevent_initial_callbacks='initial_duplicate')
 
+app.layout = html.Div(style={'display': 'flex'})
+
+sidebar = html.Div(
+    [
+        html.H2("Боковая панель"),
+        html.Ul([
+            html.Li("Ссылка 1"),
+            html.Li("Ссылка 2"),
+            html.Li("Ссылка 3"),
+        ])
+    ],
+    style={
+        'width': '200px',  # Ширина боковой панели
+        'padding': '20px',
+        'background-color': '#f8f9fa',  # Цвет фона
+        'border-right': '1px solid #dee2e6'  # Граница справа
+    }
+)
+
 # Определяем макет приложения
-app.layout = html.Div([
+content = html.Div([
+
     dcc.Store(id='uuid-store'),  # Хранение UUID
-    dcc.Dropdown(
-        id='language-dropdown',
-        options=[
-            {'label': 'Английский', 'value': 'en'},
-            {'label': 'Русский', 'value': 'ru'},
-            {'label': 'Испанский', 'value': 'es'}
-        ],
-        placeholder='Выберите язык'
-    ),
-    dcc.Textarea(id='text_in',
-                 value='',
-                 placeholder='Введите текст здесь...',
-                 style={'width': '100%', 'height': 200}),
-    dcc.Textarea(id='text_out',
-                 value='',
-                 placeholder='Здесь будет обработанный',
-                 readOnly=True,
-                 style={'width': '100%', 'height': 200}),
+    html.Div(style={'display': 'flex', 'flexDirection': 'row', 'gap': '10px', 'margin-top': '15px'},
+             children=[
+                 dcc.Dropdown(
+                     id='language-dropdown',
+                     options=[
+                         {'label': 'Английский', 'value': 'en'},
+                         {'label': 'Русский', 'value': 'ru'},
+                         {'label': 'Испанский', 'value': 'es'}
+                     ],
+                     placeholder='Выберите язык',
+                     style={'width': '300px', 'height': '30px'}
+                 ),
+                 dcc.Dropdown(
+                     id='language-dst',
+                     options=[
+                         {'label': 'Английский', 'value': 'en'},
+                         {'label': 'Русский', 'value': 'ru'},
+                         {'label': 'Испанский', 'value': 'es'}
+                     ],
+                     placeholder='Выберите язык',
+                     style={'width': '300px', 'height': '30px'}
+                 ),
+             ]),
+
+    html.Div(style={'display': 'flex', 'flexDirection': 'row', 'gap': '10px', 'margin-top': '15px'},
+             children=[
+                 dcc.Textarea(id='text_in',
+                              value='',
+                              placeholder='Введите текст здесь...',
+                              style={'width': '100%', 'height': '200px'}),
+                 dcc.Textarea(id='text_out',
+                              value='',
+                              placeholder='Здесь будет обработанный',
+                              readOnly=True,
+                              style={'width': '100%', 'height': '200px'}),
+             ]),
     dcc.Interval(
         id='interval-component',
         interval=1000,  # Интервал в миллисекундах (1000 мс = 1 секунда)
@@ -62,8 +101,11 @@ app.layout = html.Div([
     html.Div(id='output-text'),
 ])
 
+app.layout.children = [sidebar, content]
+
 
 @app.callback(
+
     Output('uuid-store', 'data'),
     Input('uuid-store', 'data')  # Вызываем callback при загрузке
 )
@@ -87,6 +129,8 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
     if n_clicks is None:
         return "Введите текст и выберите язык для перевода.", False
 
+    PDF2DOCX().func_covert('1.pdf', '1.docx')
+
     if target_language and text_in_textarea:
         redis_cache_result.delete(uuid_value)
 
@@ -106,7 +150,6 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
     State('text_out', 'value')
 )
 def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out_ta: str):
-
     if uuid_data:
         if text_in_ta and text_out_ta:
             if len(text_out_ta.split('\n')) < len(text_in_ta.split('\n')):
