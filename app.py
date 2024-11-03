@@ -1,3 +1,4 @@
+import os
 import threading
 import uuid
 
@@ -21,20 +22,61 @@ app = Dash(__name__, server=server, prevent_initial_callbacks='initial_duplicate
 
 app.layout = html.Div(style={'display': 'flex'})
 
+DIRECTORY_PATH = r'C:\Users\deanw\Downloads'
+
+# Получаем список файлов в директории
+files = os.listdir(DIRECTORY_PATH)
+
+# Создаем ссылки на файлы
+links = []
+for file in files:
+    file_ext = file[file.rfind('.') + 1:]
+    if file_ext in ['docx', 'pdf']:
+        file_path = os.path.join(DIRECTORY_PATH, file)
+        if file_ext == 'docx':
+            file_ext = 'doc'
+        links.append(html.Li(html.A(children=[html.Img(src=f'./assets/{file_ext}.svg', style={'width': '30px',
+                                                                                      'height': '30px',
+                                                                                      'marginRight': '10px'}),
+                                              file],
+                                    href=file_path,
+                                    target="_blank")))  # Создаем ссылку на файл
+
 sidebar = html.Div(
     [
-        html.H2("Боковая панель"),
-        html.Ul([
-            html.Li("Ссылка 1"),
-            html.Li("Ссылка 2"),
-            html.Li("Ссылка 3"),
-        ])
+        html.Div(children=[
+            html.H2("Ссылки на файлы"),
+            html.Button('', id='all-button',
+                        className='button',
+                        style={
+                            'display': 'flex',
+                            'width': '55px',
+                            'height': '55px',
+                            'border': 'none',
+                            'margin-left': '20px',
+                            'border-radius': '40px',
+                            'box-shadow': '1px 1px 5px black',
+                            'background': 'none',
+                            'background-image': "url('./assets/play.svg')",
+                            'background-size': 'cover',
+                            'background-repeat': 'no-repeat',
+                            'transition': 'transform 0.1s'
+                        }),
+
+        ], style={'display': 'flex',
+                  'flexDirection': 'row',
+                  'alignItems': 'center',
+                  'justifyContent': 'center'
+                  }),
+        html.Ul(links)
     ],
     style={
-        'width': '200px',  # Ширина боковой панели
+        'width': '400px',  # Ширина боковой панели
         'padding': '20px',
         'background-color': '#f8f9fa',  # Цвет фона
-        'border-right': '1px solid #dee2e6'  # Граница справа
+        'border-right': '1px solid #dee2e6',  # Граница справа
+        'maxHeight': '100vh',
+        'overflowY': 'auto'
     }
 )
 
@@ -42,31 +84,81 @@ sidebar = html.Div(
 content = html.Div([
 
     dcc.Store(id='uuid-store'),  # Хранение UUID
-    html.Div(style={'display': 'flex', 'flexDirection': 'row', 'gap': '10px', 'margin-top': '15px'},
+    html.Div(style={'display': 'flex',
+                    'flexDirection': 'row',
+                    'alignItems': 'center',
+                    'justifyContent': 'center',
+                    'gap': '10px',
+                    'margin': '20px',
+                    'margin-top': '15px',
+                    'background-color': '#f8f9fa',
+
+                    'border': '2px solid lightgray',
+                    'padding': '10px',
+                    'borderRadius': '5px',
+                    'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
+                    },
              children=[
-                 dcc.Dropdown(
-                     id='language-dropdown',
-                     options=[
-                         {'label': 'Английский', 'value': 'en'},
-                         {'label': 'Русский', 'value': 'ru'},
-                         {'label': 'Испанский', 'value': 'es'}
-                     ],
-                     placeholder='Выберите язык',
-                     style={'width': '300px', 'height': '30px'}
-                 ),
-                 dcc.Dropdown(
-                     id='language-dst',
-                     options=[
-                         {'label': 'Английский', 'value': 'en'},
-                         {'label': 'Русский', 'value': 'ru'},
-                         {'label': 'Испанский', 'value': 'es'}
-                     ],
-                     placeholder='Выберите язык',
-                     style={'width': '300px', 'height': '30px'}
-                 ),
+                 html.Div(children=[
+                     html.Label('Выберите язык (исходный):'),
+                     dcc.Dropdown(
+                         id='language-dropdown',
+                         options=[
+                             {'label': 'Английский', 'value': 'en'},
+                             {'label': 'Русский', 'value': 'ru'},
+                             {'label': 'Испанский', 'value': 'es'}
+                         ],
+                         placeholder='Выберите язык',
+                         style={'width': '300px', 'height': '30px'}
+                     ),
+                 ]),
+
+                 html.Div(children=[
+                     html.Div(children=[
+                         html.Label("Выберите язык (Целевой):"),
+                         dcc.Dropdown(
+                             id='language-dst',
+                             options=[
+                                 {'label': 'Английский', 'value': 'en'},
+                                 {'label': 'Русский', 'value': 'ru'},
+                                 {'label': 'Испанский', 'value': 'es'}
+                             ],
+                             placeholder='Выберите язык',
+                             style={'width': '300px', 'height': '30px'}
+                         ),
+                     ])
+                 ]),
+
+                 html.Button('', id='translate-button',
+                             className='button',
+                             style={
+                                 'display': 'flex',
+                                 'width': '75px',
+                                 'height': '75px',
+                                 'border': 'none',
+                                 'margin-top': '20px',
+                                 'margin-left': '20px',
+                                 'border-radius': '40px',
+                                 'box-shadow': '1px 1px 5px black',
+                                 'background': 'none',
+                                 'background-image': "url('./assets/icon.svg')",
+                                 'background-size': 'cover',
+                                 'background-repeat': 'no-repeat',
+                                 'transition': 'transform 0.1s'
+                             }),
              ]),
 
-    html.Div(style={'display': 'flex', 'flexDirection': 'row', 'gap': '10px', 'margin-top': '15px'},
+    html.Div(style={'display': 'flex',
+                    'flexDirection': 'row',
+                    'gap': '10px',
+                    'margin': '20px',
+                    'margin-top': '15px',
+                    'background-color': '#f8f9fa',
+                    'border': '2px solid lightgray',
+                    'padding': '10px',
+                    'borderRadius': '5px',
+                    'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
+                    },
              children=[
                  dcc.Textarea(id='text_in',
                               value='',
@@ -83,21 +175,7 @@ content = html.Div([
         interval=1000,  # Интервал в миллисекундах (1000 мс = 1 секунда)
         n_intervals=0  # Начальное количество интервалов
     ),
-    html.Button('', id='translate-button',
-                style={
-                    'display': 'block',
-                    'width': '75px',
-                    'height': '75px',
-                    'border': 'none',
-                    'margin-top': '20px',
-                    'margin-left': '20px',
-                    'border-radius': '40px',
-                    'box-shadow': '1px 1px 5px black',
-                    'background': 'none',
-                    'background-image': "url('./assets/icon.svg')",
-                    'background-size': 'cover',
-                    'background-repeat': 'no-repeat'
-                }),
+
     html.Div(id='output-text'),
 ])
 
