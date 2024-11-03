@@ -2,3 +2,7 @@
     transform: scale(0.95);  /* Уменьшаем размер кнопки при нажатии */
     background-color: #0056b3;  /* Меняем цвет фона при нажатии */
 }
+
+#load_button {
+    color: #E0115F;
+}

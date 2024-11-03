@@ -47,27 +47,34 @@ sidebar = html.Div(
     [
         html.Div(children=[
             html.H2("Ссылки на файлы"),
-            html.Button('', id='all-button',
-                        className='button',
-                        style={
-                            'display': 'flex',
-                            'width': '55px',
-                            'height': '55px',
-                            'border': 'none',
-                            'margin-left': '20px',
-                            'border-radius': '40px',
-                            'box-shadow': '1px 1px 5px black',
-                            'background': 'none',
-                            'background-image': "url('./assets/play.svg')",
-                            'background-size': 'cover',
-                            'background-repeat': 'no-repeat',
-                            'transition': 'transform 0.1s'
-                        }),
+            dcc.Loading(
+                id='load_button',
+                type='circle',
+                color='#E0115F',
+                children=[
+                    html.Button('', id='all-button',
+                                className='button',
+                                style={
+                                    'display': 'flex',
+                                    'width': '55px',
+                                    'height': '55px',
+                                    'border': 'none',
+                                    'margin-left': '20px',
+                                    'border-radius': '40px',
+                                    'box-shadow': '1px 1px 5px black',
+                                    'background': 'none',
+                                    'background-image': "url('./assets/play.svg')",
+                                    'background-size': 'cover',
+                                    'background-repeat': 'no-repeat',
+                                    'transition': 'transform 0.1s'
+                                }),
+                ]
+            )
 
         ], style={'display': 'flex',
                   'flexDirection': 'row',
                   'alignItems': 'center',
-                  'justifyContent': 'center'
+                  'justifyContent': 'center',
                   }),
         html.Ul(links)
     ],
@@ -245,6 +252,27 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
             return None, False
     else:
         return None, False
+
+
+@app.callback(
+    Output('all-button', 'disabled'),
+    Input('all-button', 'n_clicks'),
+    State('all-button', 'disabled')
+)
+def translate_docs(n_clicks: int, is_disabled: bool):
+    if n_clicks > 0 and not is_disabled:
+        is_disabled = True
+        for file_name in os.listdir(DIRECTORY_PATH):
+            if file_name[file_name.rfind('.') + 1:] in ['pdf']:
+                if not os.path.exists('./temp'):
+                    os.mkdir('./temp')
+
+                PDF2DOCX().func_covert(os.path.join(DIRECTORY_PATH, file_name),
+                                       f'./temp/{file_name[:file_name.rfind('.')]}.docx')
+        is_disabled = False
+        return is_disabled
+
+    return is_disabled
 
 
 # Запускаем сервер
