@@ -35,12 +35,13 @@ for file in files:
         file_path = os.path.join(DIRECTORY_PATH, file)
         if file_ext == 'docx':
             file_ext = 'doc'
-        links.append(html.Li(html.A(children=[html.Img(src=f'./assets/{file_ext}.svg', style={'width': '30px',
-                                                                                      'height': '30px',
-                                                                                      'marginRight': '10px'}),
+        links.append(html.Li(html.A(children=[html.Img(src=f'./assets/{file_ext}.svg',
+                                                       style={'width': '30px',
+                                                              'height': '30px',
+                                                              'marginRight': '10px'}),
                                               file],
                                     href=file_path,
-                                    target="_blank")))  # Создаем ссылку на файл
+                                    target="_blank")))
 
 sidebar = html.Div(
     [
