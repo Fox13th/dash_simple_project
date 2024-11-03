@@ -41,12 +41,23 @@ for file in files:
                                                               'marginRight': '10px'}),
                                               file],
                                     href=file_path,
-                                    target="_blank")))
+                                    target="_blank",
+                                    id='a_ref',
+                                    style={
+                                        'display': 'flex',
+                                        'alignItems': 'center',
+                                        'color': '#E0115F',
+                                        'textDecoration': 'none'}),
+                             id='li_ref',
+                             style={
+                                 'transition': 'transform .6s ease'
+                             }),
+                     )
 
 sidebar = html.Div(
     [
         html.Div(children=[
-            html.H2("Ссылки на файлы"),
+            html.H2("Ссылки на файлы", style={'color': '#E0115F'}),
             dcc.Loading(
                 id='load_button',
                 type='circle',
@@ -66,25 +77,29 @@ sidebar = html.Div(
                                     'background-image': "url('./assets/play.svg')",
                                     'background-size': 'cover',
                                     'background-repeat': 'no-repeat',
+
                                     'transition': 'transform 0.1s'
                                 }),
                 ]
-            )
+            ),
 
         ], style={'display': 'flex',
                   'flexDirection': 'row',
                   'alignItems': 'center',
                   'justifyContent': 'center',
+
                   }),
-        html.Ul(links)
+        html.Hr(),
+        html.Ul(links, style={'list-style': 'none'})
     ],
     style={
-        'width': '400px',  # Ширина боковой панели
+        'width': '25vw',  # Ширина боковой панели
         'padding': '20px',
-        'background-color': '#f8f9fa',  # Цвет фона
+        'background-color': '#f9f6f6',  # Цвет фона
         'border-right': '1px solid #dee2e6',  # Граница справа
         'maxHeight': '100vh',
-        'overflowY': 'auto'
+        'overflowY': 'auto',
+        'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
     }
 )
 
@@ -92,75 +107,89 @@ sidebar = html.Div(
 content = html.Div([
 
     dcc.Store(id='uuid-store'),  # Хранение UUID
-    html.Div(style={'display': 'flex',
-                    'flexDirection': 'row',
-                    'alignItems': 'center',
+    html.Div(style={'background-color': '#8f060a',
+                    'height': '250px',
                     'justifyContent': 'center',
-                    'gap': '10px',
-                    'margin': '20px',
-                    'margin-top': '15px',
-                    'background-color': '#f8f9fa',
-
-                    'border': '2px solid lightgray',
-                    'padding': '10px',
-                    'borderRadius': '5px',
-                    'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
+                    'width': '75vw',
                     },
              children=[
-                 html.Div(children=[
-                     html.Label('Выберите язык (исходный):'),
-                     dcc.Dropdown(
-                         id='language-dropdown',
-                         options=[
-                             {'label': 'Английский', 'value': 'en'},
-                             {'label': 'Русский', 'value': 'ru'},
-                             {'label': 'Испанский', 'value': 'es'}
-                         ],
-                         placeholder='Выберите язык',
-                         style={'width': '300px', 'height': '30px'}
-                     ),
-                 ]),
+                 html.H2('asdadsad', style={'margin-top': '0px',
+                                            'text-align': 'center',
+                                            'padding': '10px',
+                                            'color': '#f6e4da'}),
+                 html.H2('asdadsad', style={
+                                            'text-align': 'center',
+                                            'color': '#f6e4da'}),
+                 html.Div(style={'display': 'flex',
+                                 'flexDirection': 'row',
+                                 'alignItems': 'center',
+                                 'justifyContent': 'center',
+                                 'gap': '10px',
+                                 'margin': '340px',
+                                 'margin-top': '100px',
+                                 'background-color': '#f8f9fa',
+                                 'border': '2px solid lightgray',
+                                 'padding': '10px',
+                                 'borderRadius': '5px',
+                                 'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
+                                 },
+                          children=[
+                              html.Div(children=[
+                                  html.Label('Выберите язык (исходный):'),
+                                  dcc.Dropdown(
+                                      id='language-dropdown',
+                                      options=[
+                                          {'label': 'Английский', 'value': 'en'},
+                                          {'label': 'Русский', 'value': 'ru'},
+                                          {'label': 'Испанский', 'value': 'es'}
+                                      ],
+                                      placeholder='Выберите язык',
+                                      style={'width': '300px', 'height': '30px'}
+                                  ),
+                              ]),
 
-                 html.Div(children=[
-                     html.Div(children=[
-                         html.Label("Выберите язык (Целевой):"),
-                         dcc.Dropdown(
-                             id='language-dst',
-                             options=[
-                                 {'label': 'Английский', 'value': 'en'},
-                                 {'label': 'Русский', 'value': 'ru'},
-                                 {'label': 'Испанский', 'value': 'es'}
-                             ],
-                             placeholder='Выберите язык',
-                             style={'width': '300px', 'height': '30px'}
-                         ),
-                     ])
-                 ]),
+                              html.Div(children=[
+                                  html.Div(children=[
+                                      html.Label("Выберите язык (Целевой):"),
+                                      dcc.Dropdown(
+                                          id='language-dst',
+                                          options=[
+                                              {'label': 'Английский', 'value': 'en'},
+                                              {'label': 'Русский', 'value': 'ru'},
+                                              {'label': 'Испанский', 'value': 'es'}
+                                          ],
+                                          placeholder='Выберите язык',
+                                          style={'width': '300px', 'height': '30px'}
+                                      ),
+                                  ])
+                              ]),
 
-                 html.Button('', id='translate-button',
-                             className='button',
-                             style={
-                                 'display': 'flex',
-                                 'width': '75px',
-                                 'height': '75px',
-                                 'border': 'none',
-                                 'margin-top': '20px',
-                                 'margin-left': '20px',
-                                 'border-radius': '40px',
-                                 'box-shadow': '1px 1px 5px black',
-                                 'background': 'none',
-                                 'background-image': "url('./assets/icon.svg')",
-                                 'background-size': 'cover',
-                                 'background-repeat': 'no-repeat',
-                                 'transition': 'transform 0.1s'
-                             }),
+                              html.Button('', id='translate-button',
+                                          className='button',
+                                          style={
+                                              'display': 'flex',
+                                              'width': '75px',
+                                              'height': '75px',
+                                              'border': 'none',
+                                              'margin-top': '20px',
+                                              'margin-left': '20px',
+                                              'border-radius': '40px',
+                                              'box-shadow': '1px 1px 5px black',
+                                              'background': 'none',
+                                              'background-image': "url('./assets/icon.svg')",
+                                              'background-size': 'cover',
+                                              'background-repeat': 'no-repeat',
+                                              'transition': 'transform 0.1s'
+                                          }),
+                          ]),
              ]),
 
     html.Div(style={'display': 'flex',
                     'flexDirection': 'row',
                     'gap': '10px',
-                    'margin': '20px',
-                    'margin-top': '15px',
+                    'height': '40vh',
+                    'margin': '100px',
+                    'margin-top': '150px',
                     'background-color': '#f8f9fa',
                     'border': '2px solid lightgray',
                     'padding': '10px',
@@ -171,12 +200,12 @@ content = html.Div([
                  dcc.Textarea(id='text_in',
                               value='',
                               placeholder='Введите текст здесь...',
-                              style={'width': '100%', 'height': '200px'}),
+                              style={'width': '100%', 'height': '39.5vh'}),
                  dcc.Textarea(id='text_out',
                               value='',
                               placeholder='Здесь будет обработанный',
                               readOnly=True,
-                              style={'width': '100%', 'height': '200px'}),
+                              style={'width': '100%', 'height': '39.5vh'}),
              ]),
     dcc.Interval(
         id='interval-component',
