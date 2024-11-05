@@ -264,14 +264,14 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
 @app.callback(
     Output('text_out', 'value'),
     Output('translate-button', 'disabled', allow_duplicate=True),
-    # Output('links-list', 'children'),
+    Output('links-list', 'children'),
     Input('interval-component', 'n_intervals'),
     State('uuid-store', 'data'),
     State('text_in', 'value'),
     State('text_out', 'value')
 )
 def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out_ta: str):
-    # links = create_links(DIRECTORY_PATH)
+    links = create_links(DIRECTORY_PATH)
     if uuid_data:
         if text_in_ta and text_out_ta:
             if len(text_out_ta.split('\n')) < len(text_in_ta.split('\n')):
@@ -283,19 +283,11 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
 
         result_session = redis_cache_result.get(uuid_data)
         if result_session:
-            return result_session.decode('utf-8'), but_enable,  # links
+            return result_session.decode('utf-8'), but_enable, links
         else:
-            return None, False,  # links
+            return None, False, links
     else:
-        return None, False,  # links
-
-
-@app.callback(
-    Output('links-list', 'children'),
-    Input('interval-component', 'n_intervals')
-)
-def aaaa(n_inter: int):
-    return create_links(DIRECTORY_PATH)
+        return None, False, links
 
 
 @app.callback(
@@ -328,17 +320,18 @@ def select_ref(*args):
     if not ctx.triggered:
         return ""
 
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    file_name = button_id.replace('/', '.')
-    file_ext = file_name[file_name.rfind('.') + 1:]
-    file_path = os.path.join(DIRECTORY_PATH, file_name)
+    if ctx.triggered[0]['value'] is not None:
+        button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        file_name = button_id.replace('/', '.')
+        file_ext = file_name[file_name.rfind('.') + 1:]
+        file_path = os.path.join(DIRECTORY_PATH, file_name)
 
-    if file_ext == 'txt':
-        return TXTReader().file_read(file_path)
-    if file_ext == 'docx':
-        return DocxReader().file_read(file_path)
+        if file_ext == 'txt':
+            return TXTReader().file_read(file_path)
+        if file_ext == 'docx':
+            return DocxReader().file_read(file_path)
 
-    return f'Нажата ссылка: {file_name}'
+        return f'Файл не поддерживается: {file_name}'
 
 
 # Запускаем сервер
