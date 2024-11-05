@@ -6,6 +6,7 @@ import uuid
 import dash
 import redis
 from dash import Dash, dcc, html, Input, Output, State
+from dotenv import set_key, load_dotenv
 from flask import Flask
 from pdf2docx import Converter
 
@@ -27,6 +28,8 @@ app = Dash(__name__, server=server, prevent_initial_callbacks='initial_duplicate
 app.layout = html.Div(style={'display': 'flex'})
 
 DIRECTORY_PATH = settings.docs_directory
+
+load_dotenv()
 
 
 def create_links(dir_path: str) -> list:
@@ -94,8 +97,32 @@ sidebar = html.Div(
                   'flexDirection': 'row',
                   'alignItems': 'center',
                   'justifyContent': 'center',
-
                   }),
+        html.Div(style={'display': 'flex',
+                        'flexDirection': 'row',
+                        'alignItems': 'center',
+                        'justifyContent': 'center',
+                        },
+                 children=[
+                     dcc.Input(id='input_dir', value=DIRECTORY_PATH, style={'width': '195px'}),
+                     html.Button('', id='refresh-button',
+                                 className='button',
+                                 style={
+                                     'display': 'flex',
+                                     'width': '25px',
+                                     'height': '25px',
+                                     'border': 'none',
+                                     'margin-left': '20px',
+                                     'border-radius': '40px',
+                                     'background': 'none',
+                                     'background-image': "url('./assets/refresh.svg')",
+                                     'background-size': 'cover',
+                                     'background-repeat': 'no-repeat',
+
+                                     'transition': 'transform 0.1s'
+                                 }),
+                 ]
+                 ),
         html.Hr(),
         html.Ul(create_links(DIRECTORY_PATH), style={'list-style': 'none'}, id='links-list')
     ],
@@ -289,12 +316,23 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
         return None, False
 
 
-#@app.callback(
+# @app.callback(
 #    Output('links-list', 'children'),
 #    Input('int-refresh', 'n_intervals'),
-#)
-#def refresh_links(n_int: int):
+# )
+# def refresh_links(n_int: int):
 #    return create_links(DIRECTORY_PATH)
+
+
+@app.callback(
+    Output('links-list', 'children', allow_duplicate=True),
+    Input('refresh-button', 'n_clicks'),
+    State('input_dir', 'value')
+)
+def refresh_docs(n_click: int, dir_docs: str):
+    if n_click > 0:
+        set_key('.env', 'DOCS_DIRECTORY', dir_docs)
+        return create_links(DIRECTORY_PATH)
 
 
 @app.callback(
@@ -348,7 +386,7 @@ def select_ref(*args):
             else:
                 data_str = f'Файл {file_name} не поддерживается'
 
-            #links = create_links(DIRECTORY_PATH)
+            # links = create_links(DIRECTORY_PATH)
 
             return data_str, links
 
