@@ -26,35 +26,37 @@ app.layout = html.Div(style={'display': 'flex'})
 
 DIRECTORY_PATH = settings.docs_directory
 
-# Получаем список файлов в директории
-files = os.listdir(DIRECTORY_PATH)
 
-# Создаем ссылки на файлы
-links = []
-for file in files:
-    file_ext = file[file.rfind('.') + 1:]
-    if file_ext in ['docx', 'pdf', 'txt']:
-        file_path = os.path.join(DIRECTORY_PATH, file)
-        if file_ext == 'docx':
-            file_ext = 'doc'
-        links.append(html.Li(html.A(children=[html.Img(src=f'./assets/{file_ext}.svg',
-                                                       style={'width': '30px',
-                                                              'height': '30px',
-                                                              'marginRight': '10px'}),
-                                              file],
-                                    href=file_path,
-                                    target="_blank",
-                                    id=f'{file.replace('.', '/')}',
-                                    style={
-                                        'display': 'flex',
-                                        'alignItems': 'center',
-                                        'color': '#E0115F',
-                                        'textDecoration': 'none'}),
-                             id=f'li_ref',
-                             style={
-                                 'transition': 'transform .6s ease'
-                             }),
-                     )
+def create_links(dir_path: str) -> list:
+    files = os.listdir(dir_path)
+
+    links = []
+    for file in files:
+        file_ext = file[file.rfind('.') + 1:]
+        if file_ext in ['docx', 'pdf', 'txt']:
+            file_path = os.path.join(dir_path, file)
+            if file_ext == 'docx':
+                file_ext = 'doc'
+            links.append(html.Li(html.A(children=[html.Img(src=f'./assets/{file_ext}.svg',
+                                                           style={'width': '30px',
+                                                                  'height': '30px',
+                                                                  'marginRight': '10px'}),
+                                                  file],
+                                        href=file_path,
+                                        target="_blank",
+                                        id=f'{file.replace('.', '/')}',
+                                        style={
+                                            'display': 'flex',
+                                            'alignItems': 'center',
+                                            'color': '#E0115F',
+                                            'textDecoration': 'none'}),
+                                 id=f'li_ref',
+                                 style={
+                                     'transition': 'transform .6s ease'
+                                 }),
+                         )
+    return links
+
 
 sidebar = html.Div(
     [
@@ -93,7 +95,7 @@ sidebar = html.Div(
 
                   }),
         html.Hr(),
-        html.Ul(links, style={'list-style': 'none'})
+        html.Ul(create_links(DIRECTORY_PATH), style={'list-style': 'none'}, id='links-list')
     ],
     style={
         'width': '25vw',  # Ширина боковой панели
@@ -262,12 +264,14 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
 @app.callback(
     Output('text_out', 'value'),
     Output('translate-button', 'disabled', allow_duplicate=True),
+    # Output('links-list', 'children'),
     Input('interval-component', 'n_intervals'),
     State('uuid-store', 'data'),
     State('text_in', 'value'),
     State('text_out', 'value')
 )
 def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out_ta: str):
+    # links = create_links(DIRECTORY_PATH)
     if uuid_data:
         if text_in_ta and text_out_ta:
             if len(text_out_ta.split('\n')) < len(text_in_ta.split('\n')):
@@ -279,11 +283,19 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
 
         result_session = redis_cache_result.get(uuid_data)
         if result_session:
-            return result_session.decode('utf-8'), but_enable
+            return result_session.decode('utf-8'), but_enable,  # links
         else:
-            return None, False
+            return None, False,  # links
     else:
-        return None, False
+        return None, False,  # links
+
+
+@app.callback(
+    Output('links-list', 'children'),
+    Input('interval-component', 'n_intervals')
+)
+def aaaa(n_inter: int):
+    return create_links(DIRECTORY_PATH)
 
 
 @app.callback(
@@ -317,7 +329,6 @@ def select_ref(*args):
         return ""
 
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-
     file_name = button_id.replace('/', '.')
     file_ext = file_name[file_name.rfind('.') + 1:]
     file_path = os.path.join(DIRECTORY_PATH, file_name)
