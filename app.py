@@ -2,11 +2,13 @@ import os
 import threading
 import uuid
 
+import dash
 import redis
 from dash import Dash, dcc, html, Input, Output, State
 from flask import Flask
 
 from services.converters import PDF2DOCX
+from services.file_reader import TXTReader, DocxReader
 from sockets.client_sock import client_program
 from core import config
 
@@ -22,7 +24,7 @@ app = Dash(__name__, server=server, prevent_initial_callbacks='initial_duplicate
 
 app.layout = html.Div(style={'display': 'flex'})
 
-DIRECTORY_PATH = r'C:\Users\deanw\Downloads'
+DIRECTORY_PATH = settings.docs_directory
 
 # Получаем список файлов в директории
 files = os.listdir(DIRECTORY_PATH)
@@ -31,7 +33,7 @@ files = os.listdir(DIRECTORY_PATH)
 links = []
 for file in files:
     file_ext = file[file.rfind('.') + 1:]
-    if file_ext in ['docx', 'pdf']:
+    if file_ext in ['docx', 'pdf', 'txt']:
         file_path = os.path.join(DIRECTORY_PATH, file)
         if file_ext == 'docx':
             file_ext = 'doc'
@@ -42,13 +44,13 @@ for file in files:
                                               file],
                                     href=file_path,
                                     target="_blank",
-                                    id='a_ref',
+                                    id=f'{file.replace('.', '/')}',
                                     style={
                                         'display': 'flex',
                                         'alignItems': 'center',
                                         'color': '#E0115F',
                                         'textDecoration': 'none'}),
-                             id='li_ref',
+                             id=f'li_ref',
                              style={
                                  'transition': 'transform .6s ease'
                              }),
@@ -58,6 +60,7 @@ sidebar = html.Div(
     [
         html.Div(children=[
             html.H2("Ссылки на файлы", style={'color': '#E0115F'}),
+
             dcc.Loading(
                 id='load_button',
                 type='circle',
@@ -118,8 +121,8 @@ content = html.Div([
                                             'padding': '10px',
                                             'color': '#f6e4da'}),
                  html.H2('asdadsad', style={
-                                            'text-align': 'center',
-                                            'color': '#f6e4da'}),
+                     'text-align': 'center',
+                     'color': '#f6e4da'}),
                  html.Div(style={'display': 'flex',
                                  'flexDirection': 'row',
                                  'alignItems': 'center',
@@ -302,6 +305,29 @@ def translate_docs(n_clicks: int, is_disabled: bool):
         return is_disabled
 
     return is_disabled
+
+
+@app.callback(
+    Output('text_in', 'value'),
+    [Input(f'{file.replace('.', '/')}', 'n_clicks') for file in os.listdir(DIRECTORY_PATH)]
+)
+def select_ref(*args):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        return ""
+
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    file_name = button_id.replace('/', '.')
+    file_ext = file_name[file_name.rfind('.') + 1:]
+    file_path = os.path.join(DIRECTORY_PATH, file_name)
+
+    if file_ext == 'txt':
+        return TXTReader().file_read(file_path)
+    if file_ext == 'docx':
+        return DocxReader().file_read(file_path)
+
+    return f'Нажата ссылка: {file_name}'
 
 
 # Запускаем сервер

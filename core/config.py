@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     socket_host: str = '127.0.0.1'
     socket_port: int = 5002
 
+    docs_directory: str
+
     debug: bool = os.environ.get('DEBUG')
 
     class Config:

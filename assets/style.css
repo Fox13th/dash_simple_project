@@ -11,6 +11,6 @@ body {
     color: #E0115F;
 }
 
-#a_ref:hover, #li_ref:hover {
+#li_ref:hover {
     transform: scale(1.05);
 }
