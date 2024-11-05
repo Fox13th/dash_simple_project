@@ -6,7 +6,7 @@ from pdf2docx import Converter
 class FileConverter(ABC):
 
     @abstractmethod
-    def func_covert(self, scr_file: str, dst_file: str):
+    def func_covert(self, scr_file: str, dst_file: str) -> bool:
         pass
 
 

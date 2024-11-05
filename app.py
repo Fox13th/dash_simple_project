@@ -1,11 +1,13 @@
 import os
 import threading
+import time
 import uuid
 
 import dash
 import redis
 from dash import Dash, dcc, html, Input, Output, State
 from flask import Flask
+from pdf2docx import Converter
 
 from services.converters import PDF2DOCX
 from services.file_reader import TXTReader, DocxReader
@@ -33,7 +35,7 @@ def create_links(dir_path: str) -> list:
     links = []
     for file in files:
         file_ext = file[file.rfind('.') + 1:]
-        if file_ext in ['docx', 'pdf', 'txt']:
+        if file_ext in ['doc', 'docx', 'pdf', 'txt']:
             file_path = os.path.join(dir_path, file)
             if file_ext == 'docx':
                 file_ext = 'doc'
@@ -217,7 +219,6 @@ content = html.Div([
         interval=1000,  # Интервал в миллисекундах (1000 мс = 1 секунда)
         n_intervals=0  # Начальное количество интервалов
     ),
-
     html.Div(id='output-text'),
 ])
 
@@ -249,7 +250,7 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
     if n_clicks is None:
         return "Введите текст и выберите язык для перевода.", False
 
-    PDF2DOCX().func_covert('1.pdf', '1.docx')
+    # PDF2DOCX().func_covert('1.pdf', '1.docx')
 
     if target_language and text_in_textarea:
         redis_cache_result.delete(uuid_value)
@@ -264,14 +265,12 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
 @app.callback(
     Output('text_out', 'value'),
     Output('translate-button', 'disabled', allow_duplicate=True),
-    Output('links-list', 'children'),
     Input('interval-component', 'n_intervals'),
     State('uuid-store', 'data'),
     State('text_in', 'value'),
     State('text_out', 'value')
 )
 def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out_ta: str):
-    links = create_links(DIRECTORY_PATH)
     if uuid_data:
         if text_in_ta and text_out_ta:
             if len(text_out_ta.split('\n')) < len(text_in_ta.split('\n')):
@@ -283,11 +282,19 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
 
         result_session = redis_cache_result.get(uuid_data)
         if result_session:
-            return result_session.decode('utf-8'), but_enable, links
+            return result_session.decode('utf-8'), but_enable  # , links
         else:
-            return None, False, links
+            return None, False
     else:
-        return None, False, links
+        return None, False
+
+
+#@app.callback(
+#    Output('links-list', 'children'),
+#    Input('int-refresh', 'n_intervals'),
+#)
+#def refresh_links(n_int: int):
+#    return create_links(DIRECTORY_PATH)
 
 
 @app.callback(
@@ -313,25 +320,40 @@ def translate_docs(n_clicks: int, is_disabled: bool):
 
 @app.callback(
     Output('text_in', 'value'),
-    [Input(f'{file.replace('.', '/')}', 'n_clicks') for file in os.listdir(DIRECTORY_PATH)]
+    Output('links-list', 'children'),
+    [Input(f'{file.replace('.', '/')}', 'n_clicks') for file in os.listdir(DIRECTORY_PATH) if
+     file[file.rfind('.') + 1:] in ['pdf', 'doc', 'docx', 'txt']]
 )
 def select_ref(*args):
     ctx = dash.callback_context
+    links = create_links(DIRECTORY_PATH)
     if not ctx.triggered:
-        return ""
+        return "", links
+    try:
+        if ctx.triggered[0]['value'] is not None:
+            button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+            file_name = button_id.replace('/', '.')
+            file_ext = file_name[file_name.rfind('.') + 1:]
+            file_path = os.path.join(DIRECTORY_PATH, file_name)
 
-    if ctx.triggered[0]['value'] is not None:
-        button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        file_name = button_id.replace('/', '.')
-        file_ext = file_name[file_name.rfind('.') + 1:]
-        file_path = os.path.join(DIRECTORY_PATH, file_name)
+            if file_ext == 'txt':
+                data_str = TXTReader(method=1).file_read(file_path)
+            elif file_ext == 'docx':
+                data_str = DocxReader(method=1).file_read(file_path)
+            elif file_ext == 'pdf':
+                converted_file = os.path.join(os.path.abspath('.'), 'temp', f'{file_name[:file_name.rfind('.')]}.docx')
+                if not os.path.exists(converted_file):
+                    PDF2DOCX().func_covert(file_path, converted_file)
+                data_str = DocxReader(method=1).file_read(converted_file)
+            else:
+                data_str = f'Файл {file_name} не поддерживается'
 
-        if file_ext == 'txt':
-            return TXTReader().file_read(file_path)
-        if file_ext == 'docx':
-            return DocxReader().file_read(file_path)
+            #links = create_links(DIRECTORY_PATH)
 
-        return f'Файл не поддерживается: {file_name}'
+            return data_str, links
+
+    except Exception as e:
+        return f'Ошибка при обработке файла: {str(e)}'
 
 
 # Запускаем сервер
