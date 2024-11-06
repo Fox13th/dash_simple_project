@@ -1,4 +1,5 @@
 import os
+import sys
 import threading
 import time
 import uuid
@@ -30,6 +31,7 @@ app.layout = html.Div(style={'display': 'flex'})
 DIRECTORY_PATH = settings.docs_directory
 
 load_dotenv()
+
 
 
 def create_links(dir_path: str) -> list:
@@ -316,23 +318,54 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
         return None, False
 
 
-# @app.callback(
-#    Output('links-list', 'children'),
-#    Input('int-refresh', 'n_intervals'),
-# )
-# def refresh_links(n_int: int):
-#    return create_links(DIRECTORY_PATH)
-
-
 @app.callback(
     Output('links-list', 'children', allow_duplicate=True),
     Input('refresh-button', 'n_clicks'),
     State('input_dir', 'value')
 )
-def refresh_docs(n_click: int, dir_docs: str):
-    if n_click > 0:
-        set_key('.env', 'DOCS_DIRECTORY', dir_docs)
-        return create_links(DIRECTORY_PATH)
+def refresh_docs(n_click: int | None, dir_docs: str):
+    global DIRECTORY_PATH
+
+    if n_click is not None:
+        if n_click > 0:
+            if not os.path.exists(dir_docs):
+                return [html.Li(html.A(children=[html.Img(src=f'./assets/error-page.svg',
+                                                          style={'width': '30px',
+                                                                 'height': '30px',
+                                                                 'marginRight': '10px'}),
+                                                 'Указанная директория не существует!'],
+                                       href='error-page',
+                                       target="_blank",
+                                       id=f'error-page',
+                                       style={
+                                           'display': 'flex',
+                                           'alignItems': 'center',
+                                           'color': '#E0115F',
+                                           'textDecoration': 'none'}),
+                                )]
+            files = os.listdir(dir_docs)
+            supported_files = [file for file in files if file[file.rfind('.') + 1:] in ['doc', 'docx', 'pdf', 'txt']]
+            if len(supported_files) == 0:
+                return [html.Li(html.A(children=[html.Img(src=f'./assets/error.svg',
+                                                          style={'width': '30px',
+                                                                 'height': '30px',
+                                                                 'marginRight': '10px'}),
+                                                 'Указанная директория не содержит файлов поддерживаемых форматов!'],
+                                       href='empty-dir',
+                                       target="_blank",
+                                       id=f'empty-dir',
+                                       style={
+                                           'display': 'flex',
+                                           'alignItems': 'center',
+                                           'color': '#E0115F',
+                                           'textDecoration': 'none'}),
+                                )]
+            set_key('.env', 'DOCS_DIRECTORY', dir_docs)
+            DIRECTORY_PATH = dir_docs
+
+            # Пока что нащел радикальное решение просто перезапустить приложение
+            os.execl(sys.executable, sys.executable, *sys.argv)
+            return create_links(DIRECTORY_PATH)
 
 
 @app.callback(
@@ -358,9 +391,9 @@ def translate_docs(n_clicks: int, is_disabled: bool):
 
 @app.callback(
     Output('text_in', 'value'),
-    Output('links-list', 'children'),
-    [Input(f'{file.replace('.', '/')}', 'n_clicks') for file in os.listdir(DIRECTORY_PATH) if
-     file[file.rfind('.') + 1:] in ['pdf', 'doc', 'docx', 'txt']]
+    Output('links-list', 'children', allow_duplicate=True),
+    [Input(f'{file.replace('.', '/')}', 'n_clicks') for file in os.listdir(DIRECTORY_PATH)
+     if file[file.rfind('.') + 1:] in ['pdf', 'doc', 'docx', 'txt']]
 )
 def select_ref(*args):
     ctx = dash.callback_context
@@ -373,7 +406,6 @@ def select_ref(*args):
             file_name = button_id.replace('/', '.')
             file_ext = file_name[file_name.rfind('.') + 1:]
             file_path = os.path.join(DIRECTORY_PATH, file_name)
-
             if file_ext == 'txt':
                 data_str = TXTReader(method=1).file_read(file_path)
             elif file_ext == 'docx':
@@ -385,11 +417,7 @@ def select_ref(*args):
                 data_str = DocxReader(method=1).file_read(converted_file)
             else:
                 data_str = f'Файл {file_name} не поддерживается'
-
-            # links = create_links(DIRECTORY_PATH)
-
             return data_str, links
-
     except Exception as e:
         return f'Ошибка при обработке файла: {str(e)}'
 
