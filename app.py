@@ -13,6 +13,7 @@ from pdf2docx import Converter
 
 from services.converters import PDF2DOCX
 from services.file_reader import TXTReader, DocxReader
+from services.lang_detect import LangDetect
 from sockets.client_sock import client_program
 from core import config
 
@@ -31,7 +32,6 @@ app.layout = html.Div(style={'display': 'flex'})
 DIRECTORY_PATH = settings.docs_directory
 
 load_dotenv()
-
 
 
 def create_links(dir_path: str) -> list:
@@ -286,7 +286,8 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
 
         paragraphs = text_in_textarea.split('\n')
         for paragraph in paragraphs:
-            redis_db.rpush('message_queue', f'{uuid_value}{paragraph}')
+            lang_parag = LangDetect().detection(paragraph)
+            redis_db.rpush('message_queue', f'{uuid_value}{lang_parag['language']}{paragraph}')
         return 'Отправлено в очередь', True
     return "Пожалуйста, выберите язык.", False
 
@@ -364,7 +365,7 @@ def refresh_docs(n_click: int | None, dir_docs: str):
             DIRECTORY_PATH = dir_docs
 
             # Пока что нащел радикальное решение просто перезапустить приложение
-            os.execl(sys.executable, sys.executable, *sys.argv)
+            # os.execl(sys.executable, sys.executable, *sys.argv)
             return create_links(DIRECTORY_PATH)
 
 
@@ -424,6 +425,8 @@ def select_ref(*args):
 
 # Запускаем сервер
 if __name__ == '__main__':
+    if settings.clear_queue:
+        redis_db.delete('message_queue')
     # Обязательно нужна для калибровки
     redis_db.rpush('message_queue', f'000000000000000000000000000000000000 ')
     threading.Thread(target=client_program, args=(redis_db, redis_cache_result)).start()

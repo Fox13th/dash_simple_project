@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     socket_port: int = 5002
 
     docs_directory: str
+    lang_model: str
+
+    clear_queue: bool = True
 
     debug: bool = os.environ.get('DEBUG')
 
