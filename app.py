@@ -44,13 +44,12 @@ def create_links(dir_path: str) -> list:
             file_path = os.path.join(dir_path, file)
             if file_ext == 'docx':
                 file_ext = 'doc'
-            links.append(html.Li(html.A(children=[html.Img(src=f'./assets/{file_ext}.svg',
+            links.append(html.Li(dcc.Link(children=[html.Img(src=f'./assets/{file_ext}.svg',
                                                            style={'width': '30px',
                                                                   'height': '30px',
                                                                   'marginRight': '10px'}),
                                                   file],
-                                        href=file_path,
-                                        target="_blank",
+                                        href=f'{file}',
                                         id=f'{file.replace('.', '/')}',
                                         style={
                                             'display': 'flex',
@@ -69,7 +68,7 @@ sidebar = html.Div(
     [
         html.Div(children=[
             html.H2("Ссылки на файлы", style={'color': '#E0115F'}),
-
+            dcc.Location(id='url', refresh=False),
             dcc.Loading(
                 id='load_button',
                 type='circle',
@@ -322,10 +321,10 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
 @app.callback(
     Output('links-list', 'children', allow_duplicate=True),
     Input('refresh-button', 'n_clicks'),
+    State('url', 'href'),
     State('input_dir', 'value')
 )
-def refresh_docs(n_click: int | None, dir_docs: str):
-    global DIRECTORY_PATH
+def refresh_docs(n_click: int | None, href: str, dir_docs: str):
 
     if n_click is not None:
         if n_click > 0:
@@ -393,32 +392,30 @@ def translate_docs(n_clicks: int, is_disabled: bool):
 @app.callback(
     Output('text_in', 'value'),
     Output('links-list', 'children', allow_duplicate=True),
-    [Input(f'{file.replace('.', '/')}', 'n_clicks') for file in os.listdir(DIRECTORY_PATH)
-     if file[file.rfind('.') + 1:] in ['pdf', 'doc', 'docx', 'txt']]
+    Input('url', 'pathname')
 )
-def select_ref(*args):
-    ctx = dash.callback_context
+def select_ref(pathname: str):
     links = create_links(DIRECTORY_PATH)
-    if not ctx.triggered:
+    if not pathname:
         return "", links
+
     try:
-        if ctx.triggered[0]['value'] is not None:
-            button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-            file_name = button_id.replace('/', '.')
-            file_ext = file_name[file_name.rfind('.') + 1:]
-            file_path = os.path.join(DIRECTORY_PATH, file_name)
-            if file_ext == 'txt':
-                data_str = TXTReader(method=1).file_read(file_path)
-            elif file_ext == 'docx':
-                data_str = DocxReader(method=1).file_read(file_path)
-            elif file_ext == 'pdf':
-                converted_file = os.path.join(os.path.abspath('.'), 'temp', f'{file_name[:file_name.rfind('.')]}.docx')
-                if not os.path.exists(converted_file):
-                    PDF2DOCX().func_covert(file_path, converted_file)
-                data_str = DocxReader(method=1).file_read(converted_file)
-            else:
-                data_str = f'Файл {file_name} не поддерживается'
-            return data_str, links
+        file_name = pathname[1:].replace('%20', ' ')
+        file_ext = file_name[file_name.rfind('.') + 1:]
+        file_path = os.path.join(DIRECTORY_PATH, file_name)
+
+        if file_ext == 'txt':
+            data_str = TXTReader(method=1).file_read(file_path)
+        elif file_ext == 'docx':
+            data_str = DocxReader(method=1).file_read(file_path)
+        elif file_ext == 'pdf':
+            converted_file = os.path.join(os.path.abspath('.'), 'temp', f'{file_name[:file_name.rfind('.')]}.docx')
+            if not os.path.exists(converted_file):
+                PDF2DOCX().func_covert(file_path, converted_file)
+            data_str = DocxReader(method=1).file_read(converted_file)
+        else:
+            data_str = f'Файл {file_name} не поддерживается'
+        return data_str, links
     except Exception as e:
         return f'Ошибка при обработке файла: {str(e)}'
 
