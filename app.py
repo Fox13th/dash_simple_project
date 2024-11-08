@@ -6,13 +6,15 @@ import time
 import urllib
 import uuid
 
-import dash
 import redis
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, html, Input, Output, State
 from dotenv import set_key, load_dotenv
 from flask import Flask
 from pdf2docx import Converter
 
+from layouts.content import get_content
+from layouts.links import create_links
+from layouts.sidebar import get_sidebar
 from services.converters import PDF2DOCX
 from services.file_reader import TXTReader, DocxReader
 from services.lang_detect import LangDetect
@@ -35,224 +37,7 @@ DIRECTORY_PATH = settings.docs_directory
 
 load_dotenv()
 
-
-def create_links(dir_path: str) -> list:
-    files = os.listdir(dir_path)
-
-    links = []
-    for file in files:
-        file_ext = file[file.rfind('.') + 1:]
-        if file_ext in ['doc', 'docx', 'pdf', 'txt']:
-            file_path = os.path.join(dir_path, file)
-            if file_ext == 'docx':
-                file_ext = 'doc'
-            links.append(html.Li(dcc.Link(children=[html.Img(src=f'./assets/{file_ext}.svg',
-                                                           style={'width': '30px',
-                                                                  'height': '30px',
-                                                                  'marginRight': '10px'}),
-                                                  file],
-                                        href=f'{file}',
-                                        id=f'{file.replace('.', '/')}',
-                                        style={
-                                            'display': 'flex',
-                                            'alignItems': 'center',
-                                            'color': '#E0115F',
-                                            'textDecoration': 'none'}),
-                                 id=f'li_ref',
-                                 style={
-                                     'transition': 'transform .6s ease'
-                                 }),
-                         )
-    return links
-
-
-sidebar = html.Div(
-    [
-        html.Div(children=[
-            html.H2("Ссылки на файлы", style={'color': '#E0115F'}),
-            dcc.Location(id='url', refresh=False),
-            dcc.Loading(
-                id='load_button',
-                type='circle',
-                color='#E0115F',
-                children=[
-                    html.Button('', id='all-button',
-                                className='button',
-                                style={
-                                    'display': 'flex',
-                                    'width': '55px',
-                                    'height': '55px',
-                                    'border': 'none',
-                                    'margin-left': '20px',
-                                    'border-radius': '40px',
-                                    'box-shadow': '1px 1px 5px black',
-                                    'background': 'none',
-                                    'background-image': "url('./assets/play.svg')",
-                                    'background-size': 'cover',
-                                    'background-repeat': 'no-repeat',
-
-                                    'transition': 'transform 0.1s'
-                                }),
-                ]
-            ),
-
-        ], style={'display': 'flex',
-                  'flexDirection': 'row',
-                  'alignItems': 'center',
-                  'justifyContent': 'center',
-                  }),
-        html.Div(style={'display': 'flex',
-                        'flexDirection': 'row',
-                        'alignItems': 'center',
-                        'justifyContent': 'center',
-                        },
-                 children=[
-                     dcc.Input(id='input_dir', value=DIRECTORY_PATH, style={'width': '195px'}),
-                     html.Button('', id='refresh-button',
-                                 className='button',
-                                 style={
-                                     'display': 'flex',
-                                     'width': '25px',
-                                     'height': '25px',
-                                     'border': 'none',
-                                     'margin-left': '20px',
-                                     'border-radius': '40px',
-                                     'background': 'none',
-                                     'background-image': "url('./assets/refresh.svg')",
-                                     'background-size': 'cover',
-                                     'background-repeat': 'no-repeat',
-
-                                     'transition': 'transform 0.1s'
-                                 }),
-                 ]
-                 ),
-        html.Hr(),
-        html.Ul(create_links(DIRECTORY_PATH), style={'list-style': 'none'}, id='links-list')
-    ],
-    style={
-        'width': '25vw',  # Ширина боковой панели
-        'padding': '20px',
-        'background-color': '#f9f6f6',  # Цвет фона
-        'border-right': '1px solid #dee2e6',  # Граница справа
-        'maxHeight': '100vh',
-        'overflowY': 'auto',
-        'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
-    }
-)
-
-# Определяем макет приложения
-content = html.Div([
-
-    dcc.Store(id='uuid-store'),  # Хранение UUID
-    html.Div(style={'background-color': '#8f060a',
-                    'height': '250px',
-                    'justifyContent': 'center',
-                    'width': '75vw',
-                    },
-             children=[
-                 html.H2('asdadsad', style={'margin-top': '0px',
-                                            'text-align': 'center',
-                                            'padding': '10px',
-                                            'color': '#f6e4da'}),
-                 html.H2('asdadsad', style={
-                     'text-align': 'center',
-                     'color': '#f6e4da'}),
-                 html.Div(style={'display': 'flex',
-                                 'flexDirection': 'row',
-                                 'alignItems': 'center',
-                                 'justifyContent': 'center',
-                                 'gap': '10px',
-                                 'margin': '340px',
-                                 'margin-top': '100px',
-                                 'background-color': '#f8f9fa',
-                                 'border': '2px solid lightgray',
-                                 'padding': '10px',
-                                 'borderRadius': '5px',
-                                 'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
-                                 },
-                          children=[
-                              html.Div(children=[
-                                  html.Label('Выберите язык (исходный):'),
-                                  dcc.Dropdown(
-                                      id='language-dropdown',
-                                      options=[
-                                          {'label': 'Английский', 'value': 'en'},
-                                          {'label': 'Русский', 'value': 'ru'},
-                                          {'label': 'Испанский', 'value': 'es'}
-                                      ],
-                                      placeholder='Выберите язык',
-                                      style={'width': '300px', 'height': '30px'}
-                                  ),
-                              ]),
-
-                              html.Div(children=[
-                                  html.Div(children=[
-                                      html.Label("Выберите язык (Целевой):"),
-                                      dcc.Dropdown(
-                                          id='language-dst',
-                                          options=[
-                                              {'label': 'Английский', 'value': 'en'},
-                                              {'label': 'Русский', 'value': 'ru'},
-                                              {'label': 'Испанский', 'value': 'es'}
-                                          ],
-                                          placeholder='Выберите язык',
-                                          style={'width': '300px', 'height': '30px'}
-                                      ),
-                                  ])
-                              ]),
-
-                              html.Button('', id='translate-button',
-                                          className='button',
-                                          style={
-                                              'display': 'flex',
-                                              'width': '75px',
-                                              'height': '75px',
-                                              'border': 'none',
-                                              'margin-top': '20px',
-                                              'margin-left': '20px',
-                                              'border-radius': '40px',
-                                              'box-shadow': '1px 1px 5px black',
-                                              'background': 'none',
-                                              'background-image': "url('./assets/icon.svg')",
-                                              'background-size': 'cover',
-                                              'background-repeat': 'no-repeat',
-                                              'transition': 'transform 0.1s'
-                                          }),
-                          ]),
-             ]),
-
-    html.Div(style={'display': 'flex',
-                    'flexDirection': 'row',
-                    'gap': '10px',
-                    'height': '40vh',
-                    'margin': '100px',
-                    'margin-top': '150px',
-                    'background-color': '#f8f9fa',
-                    'border': '2px solid lightgray',
-                    'padding': '10px',
-                    'borderRadius': '5px',
-                    'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
-                    },
-             children=[
-                 dcc.Textarea(id='text_in',
-                              value='',
-                              placeholder='Введите текст здесь...',
-                              style={'width': '100%', 'height': '39.5vh'}),
-                 dcc.Textarea(id='text_out',
-                              value='',
-                              placeholder='Здесь будет обработанный',
-                              readOnly=True,
-                              style={'width': '100%', 'height': '39.5vh'}),
-             ]),
-    dcc.Interval(
-        id='interval-component',
-        interval=1000,  # Интервал в миллисекундах (1000 мс = 1 секунда)
-        n_intervals=0  # Начальное количество интервалов
-    ),
-    html.Div(id='output-text'),
-])
-
-app.layout.children = [sidebar, content]
+app.layout.children = [get_sidebar(DIRECTORY_PATH), get_content()]
 
 
 @app.callback(
@@ -327,7 +112,6 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
     State('input_dir', 'value')
 )
 def refresh_docs(n_click: int | None, href: str, dir_docs: str):
-
     if n_click is not None:
         if n_click > 0:
             if not os.path.exists(dir_docs):
@@ -387,9 +171,9 @@ def translate_docs(n_clicks: int, is_disabled: bool):
                 PDF2DOCX().func_covert(os.path.join(DIRECTORY_PATH, file_name),
                                        f'./temp/{file_name[:file_name.rfind('.')]}.docx')
             elif file_ext == 'docx':
-                copy_file_name = f'{file_name[:file_name.rfind('.')]}_translated.docx'
-                shutil.copy(os.path.join(DIRECTORY_PATH, file_name), os.path.join(DIRECTORY_PATH, copy_file_name))
-
+                copy_file_name = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.docx')
+                shutil.copy(os.path.join(DIRECTORY_PATH, file_name), copy_file_name)
+                old_paragraphs = DocxReader(method=2).file_read(copy_file_name)
         is_disabled = False
         return is_disabled
 
