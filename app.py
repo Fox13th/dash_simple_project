@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import threading
 import time
@@ -378,12 +379,17 @@ def translate_docs(n_clicks: int, is_disabled: bool):
     if n_clicks > 0 and not is_disabled:
         is_disabled = True
         for file_name in os.listdir(DIRECTORY_PATH):
-            if file_name[file_name.rfind('.') + 1:] in ['pdf']:
+            file_ext = file_name[file_name.rfind('.') + 1:]
+            if file_ext in ['pdf']:
                 if not os.path.exists('./temp'):
                     os.mkdir('./temp')
 
                 PDF2DOCX().func_covert(os.path.join(DIRECTORY_PATH, file_name),
                                        f'./temp/{file_name[:file_name.rfind('.')]}.docx')
+            elif file_ext == 'docx':
+                copy_file_name = f'{file_name[:file_name.rfind('.')]}_translated.docx'
+                shutil.copy(os.path.join(DIRECTORY_PATH, file_name), os.path.join(DIRECTORY_PATH, copy_file_name))
+
         is_disabled = False
         return is_disabled
 
