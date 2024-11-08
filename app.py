@@ -2,6 +2,7 @@ import os
 import sys
 import threading
 import time
+import urllib
 import uuid
 
 import dash
@@ -396,11 +397,12 @@ def translate_docs(n_clicks: int, is_disabled: bool):
 )
 def select_ref(pathname: str):
     links = create_links(DIRECTORY_PATH)
-    if not pathname:
+    if not pathname or pathname == '/':
         return "", links
 
     try:
-        file_name = pathname[1:].replace('%20', ' ')
+        # file_name = pathname[1:].replace('%20', ' ')
+        file_name = urllib.parse.unquote(pathname[1:])
         file_ext = file_name[file_name.rfind('.') + 1:]
         file_path = os.path.join(DIRECTORY_PATH, file_name)
 
