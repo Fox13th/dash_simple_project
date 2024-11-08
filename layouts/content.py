@@ -45,13 +45,14 @@ def get_content():
                                           style={'width': '300px', 'height': '30px'}
                                       ),
                                       dcc.Checklist(
-                                          id='my-checklist',
+                                          id='checklist',
                                           options=[
                                               {'label': 'Автоопределение', 'value': 'checked'}
                                           ],
-                                          value=[],
+                                          value=['checked'],
                                           # Значения по умолчанию (пустой список означает, что флажок не установлен)
-                                          inline=True  # Отображение в одну строку
+                                          inline=True,
+                                          style={'margin-top': '10px'}
                                       )
                                   ]),
 

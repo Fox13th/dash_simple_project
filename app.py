@@ -1,6 +1,5 @@
 import os
 import shutil
-import sys
 import threading
 import time
 import urllib
@@ -23,6 +22,8 @@ from core import config
 
 settings = config.get_settings()
 
+DIRECTORY_PATH = settings.docs_directory
+
 redis_db = redis.Redis(host=settings.redis_host, port=settings.redis_port, db=0)
 redis_cache_result = redis.Redis(host=settings.redis_host, port=settings.redis_port, db=1)
 
@@ -30,18 +31,13 @@ server = Flask(__name__)
 server.secret_key = 'your_secret_key'  # Задаем секретный ключ для сессий
 
 app = Dash(__name__, server=server, prevent_initial_callbacks='initial_duplicate')
-
 app.layout = html.Div(style={'display': 'flex'})
-
-DIRECTORY_PATH = settings.docs_directory
+app.layout.children = [get_sidebar(DIRECTORY_PATH), get_content()]
 
 load_dotenv()
 
-app.layout.children = [get_sidebar(DIRECTORY_PATH), get_content()]
-
 
 @app.callback(
-
     Output('uuid-store', 'data'),
     Input('uuid-store', 'data')  # Вызываем callback при загрузке
 )
@@ -59,21 +55,26 @@ def generate_uuid(existing_uuid):
     Input('translate-button', 'n_clicks'),
     State('language-dropdown', 'value'),
     State('uuid-store', 'data'),
-    State('text_in', 'value')
+    State('text_in', 'value'),
+    State('checklist', 'value')
 )
-def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in_textarea: str):
+def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in_textarea: str, auto_detect: list):
     if n_clicks is None:
         return "Введите текст и выберите язык для перевода.", False
 
-    # PDF2DOCX().func_covert('1.pdf', '1.docx')
-
-    if target_language and text_in_textarea:
+    if (target_language or len(auto_detect) > 0) and text_in_textarea:
         redis_cache_result.delete(uuid_value)
 
         paragraphs = text_in_textarea.split('\n')
         for paragraph in paragraphs:
-            lang_parag = LangDetect().detection(paragraph)
-            redis_db.rpush('message_queue', f'{uuid_value}{lang_parag['language']}{paragraph}')
+
+            if len(auto_detect) > 0:
+                lang_parag = LangDetect().detection(paragraph)
+                lang_src = lang_parag['language']
+            else:
+                lang_src = target_language
+
+            redis_db.rpush('message_queue', f'{uuid_value}{lang_src}{paragraph}')
         return 'Отправлено в очередь', True
     return "Пожалуйста, выберите язык.", False
 
