@@ -78,7 +78,3 @@ def replace_text_in_table(doc_path: str, table_index: int, row_index, cell_index
                         inline[0].text = new_text
 
         doc.save(doc_path)
-        #doc.save('../test/updated.docx')
-
-
-#replace_text_in_table('../test/1.docx', 0, 1, 2, 0, 0, 0, 0, 'new_text')

@@ -116,6 +116,7 @@ def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out
     State('input_dir', 'value')
 )
 def refresh_docs(n_click: int | None, href: str, dir_docs: str):
+    global DIRECTORY_PATH
     if n_click is not None:
         if n_click > 0:
             if not os.path.exists(dir_docs):
@@ -152,7 +153,7 @@ def refresh_docs(n_click: int | None, href: str, dir_docs: str):
                                 )]
             set_key('.env', 'DOCS_DIRECTORY', dir_docs)
             DIRECTORY_PATH = dir_docs
-
+            settings.docs_directory = dir_docs
             # Пока что нащел радикальное решение просто перезапустить приложение
             # os.execl(sys.executable, sys.executable, *sys.argv)
             return create_links(DIRECTORY_PATH)
@@ -187,6 +188,8 @@ def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, t
     State('uuid-store', 'data'),
 )
 def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str):
+    global DIRECTORY_PATH
+
     if n_clicks > 0 and not is_disabled:
         is_disabled = True
         for file_name in os.listdir(DIRECTORY_PATH):
@@ -217,7 +220,21 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str):
                 add_queue_docx_part(old_paragraphs, uuid_value, count_name, only_name, 'text')
                 add_queue_docx_part(old_table, uuid_value, count_name, only_name, 'tabl')
                 add_queue_docx_part(old_n_table, uuid_value, count_name, only_name, 'tabl')
-                # Теперь надо с абзацем решить вопрос
+
+            elif file_ext == 'txt':
+                only_name = f'{file_name[:file_name.rfind('.')]}_translated.txt'
+
+                count_name = str(len(only_name))
+                if len(count_name) < 3:
+                    for i in range(3 - len(count_name)):
+                        count_name += " "
+
+                txt_lines = TXTReader(2).file_read(os.path.join(DIRECTORY_PATH, file_name))
+
+                for i_line, line in enumerate(txt_lines):
+                    lang_old = LangDetect().detection(line.replace('\n', ''))
+                    string_to_send = f'{uuid_value}{count_name}{only_name}{i_line}_txt{lang_old['language']}{line}'
+                    redis_db.rpush('docx_queue', string_to_send)
 
         is_disabled = False
         return is_disabled
