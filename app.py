@@ -210,12 +210,13 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str):
 
                 old_paragraphs = DocxReader(method=2).file_read(copy_file_name)
                 old_header, old_footer = DocxReader(method=2).colontituls_read(copy_file_name)
-                old_table = DocxReader(method=2).table_read(copy_file_name)
+                old_table, old_n_table = DocxReader(method=2).table_read(copy_file_name)
 
                 add_queue_docx_part(old_header, uuid_value, count_name, only_name, 'ucln')
                 add_queue_docx_part(old_footer, uuid_value, count_name, only_name, 'dcln')
                 add_queue_docx_part(old_paragraphs, uuid_value, count_name, only_name, 'text')
                 add_queue_docx_part(old_table, uuid_value, count_name, only_name, 'tabl')
+                add_queue_docx_part(old_n_table, uuid_value, count_name, only_name, 'tabl')
                 # Теперь надо с абзацем решить вопрос
 
         is_disabled = False

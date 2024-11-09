@@ -25,6 +25,7 @@ def find_mark(text: str):
 def send_message(conn, message: str, docx: bool):
     uuid_from_queue = message.decode('utf-8')[:36]
     if docx:
+        #print(message.decode('utf-8'))
         count_name_docx = message.decode('utf-8')[36:39]
         clear_count = int(str(count_name_docx).replace(' ', ''))
         file_name = message.decode('utf-8')[39:39 + clear_count]
@@ -33,14 +34,20 @@ def send_message(conn, message: str, docx: bool):
 
         num_parag = message.decode('utf-8')[39 + clear_count:39 + clear_count + min_index]
         message_to_send = message.decode('utf-8')[39 + clear_count + min_index + 4:]
+        if message_to_send == '':
+            message_to_send = ' '
 
         if mark == 'tabl':
             num_table = int(message_to_send[9:message_to_send.find('row:')])
             num_row = int(message_to_send[message_to_send.find('row:') + 4:message_to_send.find('cell:')])
-            num_cell = int(message_to_send[message_to_send.find('cell:') + 5:message_to_send.find('index:')])
+            num_cell = int(message_to_send[message_to_send.find('cell:') + 5:message_to_send.find('n_table:')])
+
+            nested_table = int(message_to_send[message_to_send.find('n_table:') + 8:message_to_send.find('n_row:')])
+            nested_row = int(message_to_send[message_to_send.find('n_row:') + 6:message_to_send.find('n_cell:')])
+            nested_cell = int(message_to_send[message_to_send.find('n_cell:') + 7:message_to_send.find('index:')])
+
             num_parag = message_to_send[message_to_send.find('index:') + 6:message_to_send.find('text:')]
             message_to_send = message_to_send[message_to_send.find('text:') + 5:]
-
     else:
         message_to_send = ' '
 
@@ -58,6 +65,9 @@ def send_message(conn, message: str, docx: bool):
                                       table_index=num_table,
                                       row_index=num_row,
                                       cell_index=num_cell,
+                                      n_index=nested_table,
+                                      n_row_index=nested_row,
+                                      n_cell_index=nested_cell,
                                       index=int(num_parag),
                                       new_text=recv_msg.decode('utf-8'))
             case 'ucln':
@@ -73,7 +83,7 @@ def send_message(conn, message: str, docx: bool):
 
 
 def client_program(redis_db: redis.Redis, redis_cache_result: redis.Redis):
-    # try:
+    #try:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
         client_socket.connect((settings.socket_host, settings.socket_port))
         while True:
@@ -111,5 +121,5 @@ def client_program(redis_db: redis.Redis, redis_cache_result: redis.Redis):
             if msg_docx:
                 send_message(client_socket, msg_docx, docx=True)
 
-    # except Exception as err:
-    #    logging.error("Произошла ошибка: %s", err)
+    #except Exception as err:
+    #   logging.error("Произошла ошибка: %s", err)

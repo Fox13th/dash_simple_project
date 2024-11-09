@@ -59,6 +59,7 @@ class DocxReader(FileReader):
         docx = Document(file_name)
 
         list_table_data = []
+        list_n_table_data = []
 
         for i_table in range(len(docx.tables)):
             for i_row in range(len(docx.tables[i_table].rows)):
@@ -66,8 +67,26 @@ class DocxReader(FileReader):
                     text_cell = docx.tables[i_table].rows[i_row].cells[i_cell].text
                     t_cell = text_cell.split('\n')
                     for i in range(len(t_cell)):
-                        list_table_data.append(f'table:{i_table}row:{i_row}cell:{i_cell}index:{i}text:{t_cell[i]}')
-        return list_table_data
+                        cur_cell = t_cell[i]
+                        if cur_cell == '':
+                            cur_cell = ' '
+                        list_table_data.append(f'table:{i_table}row:{i_row}cell:{i_cell}n_table:-1n_row:-1n_cell:-1index:{i}text:{cur_cell}')
+
+                    if docx.tables[i_table].rows[i_row].cells[i_cell].tables:
+                        for i_nested_table, nested_table in enumerate(
+                                docx.tables[i_table].rows[i_row].cells[i_cell].tables):
+                            for i_nested_row, nested_row in enumerate(nested_table.rows):
+                                for i_nested_cell, nested_cell in enumerate(nested_row.cells):
+                                    n_cell = nested_cell.text.split('\n')
+                                    for i in range(len(n_cell)):
+                                        n_cur_cell = n_cell[i]
+                                        if n_cur_cell == '':
+                                            n_cur_cell = ' '
+                                        list_n_table_data.append(
+                                            f'table:{i_table}row:{i_row}cell:{i_cell}n_table:{i_nested_table}n_row:{i_nested_row}n_cell:{i_nested_cell}index:{i}text:{n_cur_cell}'
+                                        )
+
+        return list_table_data, list_n_table_data
 
 
 class TXTReader(FileReader):
