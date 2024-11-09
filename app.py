@@ -25,6 +25,7 @@ settings = config.get_settings()
 DIRECTORY_PATH = settings.docs_directory
 
 redis_db = redis.Redis(host=settings.redis_host, port=settings.redis_port, db=0)
+
 redis_cache_result = redis.Redis(host=settings.redis_host, port=settings.redis_port, db=1)
 
 server = Flask(__name__)
@@ -48,7 +49,7 @@ def generate_uuid(existing_uuid):
     return existing_uuid
 
 
-# Коллбэк для обработки перевода
+# Коллбэк для обработки обычного перевода
 @app.callback(
     Output('output-text', 'children'),
     Output('translate-button', 'disabled', allow_duplicate=True),
@@ -66,6 +67,7 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
         redis_cache_result.delete(uuid_value)
 
         paragraphs = text_in_textarea.split('\n')
+        print(paragraphs)
         for paragraph in paragraphs:
 
             if len(auto_detect) > 0:
@@ -90,8 +92,9 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
 def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out_ta: str):
     if uuid_data:
         if text_in_ta and text_out_ta:
+            # Здесь надо придумать что-то, чтобы при повторной передаче не приходили остатки
             if len(text_out_ta.split('\n')) < len(text_in_ta.split('\n')):
-                but_enable = True
+                but_enable = False
             else:
                 but_enable = False
         else:
@@ -155,12 +158,24 @@ def refresh_docs(n_click: int | None, href: str, dir_docs: str):
             return create_links(DIRECTORY_PATH)
 
 
+def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, type_part: str):
+    for i in range(len(part_doc)):
+        if type_part == 'text':
+            text_doc = part_doc[i].text
+        else:
+            text_doc = part_doc[i]
+        lang_old = LangDetect().detection(text_doc)
+        string_to_send = f'{uuid}{name_count}{name}{i}{type_part}{lang_old['language']}{text_doc}'
+        redis_db.rpush('docx_queue', string_to_send)
+
+
 @app.callback(
     Output('all-button', 'disabled'),
     Input('all-button', 'n_clicks'),
-    State('all-button', 'disabled')
+    State('all-button', 'disabled'),
+    State('uuid-store', 'data'),
 )
-def translate_docs(n_clicks: int, is_disabled: bool):
+def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str):
     if n_clicks > 0 and not is_disabled:
         is_disabled = True
         for file_name in os.listdir(DIRECTORY_PATH):
@@ -172,9 +187,24 @@ def translate_docs(n_clicks: int, is_disabled: bool):
                 PDF2DOCX().func_covert(os.path.join(DIRECTORY_PATH, file_name),
                                        f'./temp/{file_name[:file_name.rfind('.')]}.docx')
             elif file_ext == 'docx':
-                copy_file_name = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.docx')
+                only_name = f'{file_name[:file_name.rfind('.')]}_translated.docx'
+
+                count_name = str(len(only_name))
+                if len(count_name) < 3:
+                    for i in range(3 - len(count_name)):
+                        count_name += " "
+
+                copy_file_name = os.path.join(DIRECTORY_PATH, only_name)
                 shutil.copy(os.path.join(DIRECTORY_PATH, file_name), copy_file_name)
+
                 old_paragraphs = DocxReader(method=2).file_read(copy_file_name)
+                old_header, old_footer = DocxReader(method=2).colontituls_read(copy_file_name)
+
+                add_queue_docx_part(old_header, uuid_value, count_name, only_name, 'ucln')
+                add_queue_docx_part(old_footer, uuid_value, count_name, only_name, 'dcln')
+                add_queue_docx_part(old_paragraphs, uuid_value, count_name, only_name, 'text')
+                # Теперь надо с абзацем решить вопрос
+
         is_disabled = False
         return is_disabled
 
@@ -217,7 +247,10 @@ def select_ref(pathname: str):
 if __name__ == '__main__':
     if settings.clear_queue:
         redis_db.delete('message_queue')
+        redis_db.delete('docx_queue')
     # Обязательно нужна для калибровки
     redis_db.rpush('message_queue', f'000000000000000000000000000000000000 ')
+    # redis_db.rpush('docx_queue', f'000000000000000000000000000000000000 ')
+
     threading.Thread(target=client_program, args=(redis_db, redis_cache_result)).start()
     app.run_server(debug=settings.debug)
