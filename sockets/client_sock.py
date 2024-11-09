@@ -6,7 +6,7 @@ import time
 import redis
 
 from core import config
-from services.list_docs import replace_text_in_docx, replace_header_footer_text
+from services.list_docs import replace_text_in_docx, replace_header_footer_text, replace_text_in_table
 
 settings = config.get_settings()
 
@@ -34,6 +34,13 @@ def send_message(conn, message: str, docx: bool):
         num_parag = message.decode('utf-8')[39 + clear_count:39 + clear_count + min_index]
         message_to_send = message.decode('utf-8')[39 + clear_count + min_index + 4:]
 
+        if mark == 'tabl':
+            num_table = int(message_to_send[9:message_to_send.find('row:')])
+            num_row = int(message_to_send[message_to_send.find('row:') + 4:message_to_send.find('cell:')])
+            num_cell = int(message_to_send[message_to_send.find('cell:') + 5:message_to_send.find('index:')])
+            num_parag = message_to_send[message_to_send.find('index:') + 6:message_to_send.find('text:')]
+            message_to_send = message_to_send[message_to_send.find('text:') + 5:]
+
     else:
         message_to_send = ' '
 
@@ -47,12 +54,17 @@ def send_message(conn, message: str, docx: bool):
                                      int(num_parag),
                                      recv_msg.decode('utf-8'))
             case 'tabl':
-                pass
+                replace_text_in_table(doc_path=os.path.join(settings.docs_directory, file_name),
+                                      table_index=num_table,
+                                      row_index=num_row,
+                                      cell_index=num_cell,
+                                      index=int(num_parag),
+                                      new_text=recv_msg.decode('utf-8'))
             case 'ucln':
                 replace_header_footer_text(os.path.join(settings.docs_directory, file_name),
                                            'up',
-                                     int(num_parag),
-                                     recv_msg.decode('utf-8'))
+                                           int(num_parag),
+                                           recv_msg.decode('utf-8'))
             case 'dcln':
                 replace_header_footer_text(os.path.join(settings.docs_directory, file_name),
                                            'down',

@@ -37,12 +37,6 @@ class DocxReader(FileReader):
                 for paragraph in docx.paragraphs:
                     list_docs_str.append(paragraph)
 
-                # Тут проблема возможна для отдельного таблицы
-                # for table in docx.tables:
-                #     for row in table.rows:
-                #         for cell in row.cells:
-                #             list_docs_str.append(cell.text)
-
                 return list_docs_str
 
     def colontituls_read(self, file_name: str):
@@ -60,6 +54,20 @@ class DocxReader(FileReader):
                 footers.append(paragraph.text)
 
         return headers, footers
+
+    def table_read(self, file_name: str):
+        docx = Document(file_name)
+
+        list_table_data = []
+
+        for i_table in range(len(docx.tables)):
+            for i_row in range(len(docx.tables[i_table].rows)):
+                for i_cell in range(len(docx.tables[i_table].rows[i_row].cells)):
+                    text_cell = docx.tables[i_table].rows[i_row].cells[i_cell].text
+                    t_cell = text_cell.split('\n')
+                    for i in range(len(t_cell)):
+                        list_table_data.append(f'table:{i_table}row:{i_row}cell:{i_cell}index:{i}text:{t_cell[i]}')
+        return list_table_data
 
 
 class TXTReader(FileReader):

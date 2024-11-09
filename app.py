@@ -164,8 +164,19 @@ def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, t
             text_doc = part_doc[i].text
         else:
             text_doc = part_doc[i]
-        lang_old = LangDetect().detection(text_doc)
-        string_to_send = f'{uuid}{name_count}{name}{i}{type_part}{lang_old['language']}{text_doc}'
+
+        if type_part == 'tabl':
+            txt_cell = part_doc[i][part_doc[i].find('text:') + 5:]
+            lang_old = LangDetect().detection(txt_cell)
+        else:
+            lang_old = LangDetect().detection(text_doc)
+
+        if len(lang_old['language']) == 2:
+            lang_src = f'{lang_old['language']} '
+        else:
+            lang_src = lang_old['language']
+
+        string_to_send = f'{uuid}{name_count}{name}{i}{type_part}{lang_src}{text_doc}'
         redis_db.rpush('docx_queue', string_to_send)
 
 
@@ -199,10 +210,12 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str):
 
                 old_paragraphs = DocxReader(method=2).file_read(copy_file_name)
                 old_header, old_footer = DocxReader(method=2).colontituls_read(copy_file_name)
+                old_table = DocxReader(method=2).table_read(copy_file_name)
 
                 add_queue_docx_part(old_header, uuid_value, count_name, only_name, 'ucln')
                 add_queue_docx_part(old_footer, uuid_value, count_name, only_name, 'dcln')
                 add_queue_docx_part(old_paragraphs, uuid_value, count_name, only_name, 'text')
+                add_queue_docx_part(old_table, uuid_value, count_name, only_name, 'tabl')
                 # Теперь надо с абзацем решить вопрос
 
         is_disabled = False
