@@ -181,6 +181,29 @@ def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, t
         redis_db.rpush('docx_queue', string_to_send)
 
 
+def docx_processing(file_name: str, uuid: str, tmp_path: str = DIRECTORY_PATH):
+    only_name = f'{file_name[:file_name.rfind('.')]}_translated.docx'
+
+    count_name = str(len(only_name))
+    if len(count_name) < 3:
+        for i in range(3 - len(count_name)):
+            count_name += " "
+
+    copy_file_name = os.path.join(DIRECTORY_PATH, only_name)
+
+    shutil.copy(os.path.join(tmp_path, file_name), copy_file_name)
+
+    old_paragraphs = DocxReader(method=2).file_read(copy_file_name)
+    old_header, old_footer = DocxReader(method=2).colontituls_read(copy_file_name)
+    old_table, old_n_table = DocxReader(method=2).table_read(copy_file_name)
+
+    add_queue_docx_part(old_header, uuid, count_name, only_name, 'ucln')
+    add_queue_docx_part(old_footer, uuid, count_name, only_name, 'dcln')
+    add_queue_docx_part(old_paragraphs, uuid, count_name, only_name, 'text')
+    add_queue_docx_part(old_table, uuid, count_name, only_name, 'tabl')
+    add_queue_docx_part(old_n_table, uuid, count_name, only_name, 'tabl')
+
+
 @app.callback(
     Output('all-button', 'disabled'),
     Input('all-button', 'n_clicks'),
@@ -200,26 +223,11 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str):
 
                 PDF2DOCX().func_covert(os.path.join(DIRECTORY_PATH, file_name),
                                        f'./temp/{file_name[:file_name.rfind('.')]}.docx')
+
+                docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, './temp')
+
             elif file_ext == 'docx':
-                only_name = f'{file_name[:file_name.rfind('.')]}_translated.docx'
-
-                count_name = str(len(only_name))
-                if len(count_name) < 3:
-                    for i in range(3 - len(count_name)):
-                        count_name += " "
-
-                copy_file_name = os.path.join(DIRECTORY_PATH, only_name)
-                shutil.copy(os.path.join(DIRECTORY_PATH, file_name), copy_file_name)
-
-                old_paragraphs = DocxReader(method=2).file_read(copy_file_name)
-                old_header, old_footer = DocxReader(method=2).colontituls_read(copy_file_name)
-                old_table, old_n_table = DocxReader(method=2).table_read(copy_file_name)
-
-                add_queue_docx_part(old_header, uuid_value, count_name, only_name, 'ucln')
-                add_queue_docx_part(old_footer, uuid_value, count_name, only_name, 'dcln')
-                add_queue_docx_part(old_paragraphs, uuid_value, count_name, only_name, 'text')
-                add_queue_docx_part(old_table, uuid_value, count_name, only_name, 'tabl')
-                add_queue_docx_part(old_n_table, uuid_value, count_name, only_name, 'tabl')
+                docx_processing(file_name, uuid_value, )
 
             elif file_ext == 'txt':
                 only_name = f'{file_name[:file_name.rfind('.')]}_translated.txt'
