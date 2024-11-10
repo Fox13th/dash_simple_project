@@ -91,6 +91,7 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
 )
 def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out_ta: str):
     if uuid_data:
+
         if text_in_ta and text_out_ta:
             # Здесь надо придумать что-то, чтобы при повторной передаче не приходили остатки
             if len(text_out_ta.split('\n')) < len(text_in_ta.split('\n')):

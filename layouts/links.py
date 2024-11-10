@@ -9,22 +9,35 @@ def create_links(dir_path: str) -> list:
     links = []
     for file in files:
         file_ext = file[file.rfind('.') + 1:]
-        if file_ext in ['doc', 'docx', 'pdf', 'txt']:
+        not_end = ('_translated.docx', '_translated.txt')
+        if file_ext in ['doc', 'docx', 'pdf', 'txt'] and not file.endswith(not_end):
             file_path = os.path.join(dir_path, file)
             if file_ext == 'docx':
                 file_ext = 'doc'
+            style_links = {
+                'display': 'flex',
+                'alignItems': 'center',
+                'color': '#E0115F',
+                'textDecoration': 'none'}
+
+            print(f'{file[:file.rfind('.')]}_translated.docx')
+            # print(f'{file[:file.rfind('.')]}_translated.docx')
+            if os.path.exists(os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.docx')) or os.path.exists(
+                    os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.txt')):
+                print(f'{file[:file.rfind('.')]}_translated.docx')
+                style_links['color'] = 'green'
+            else:
+                # print('not')
+                style_links['color'] = 'E0115F'
+
             links.append(html.Li(dcc.Link(children=[html.Img(src=f'./assets/{file_ext}.svg',
-                                                           style={'width': '30px',
-                                                                  'height': '30px',
-                                                                  'marginRight': '10px'}),
-                                                  file],
-                                        href=f'{file}',
-                                        id=f'{file.replace('.', '/')}',
-                                        style={
-                                            'display': 'flex',
-                                            'alignItems': 'center',
-                                            'color': '#E0115F',
-                                            'textDecoration': 'none'}),
+                                                             style={'width': '30px',
+                                                                    'height': '30px',
+                                                                    'marginRight': '10px'}),
+                                                    file],
+                                          href=f'{file}',
+                                          id=f'{file.replace('.', '/')}',
+                                          style=style_links),
                                  id=f'li_ref',
                                  style={
                                      'transition': 'transform .6s ease'
