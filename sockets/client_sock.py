@@ -23,10 +23,9 @@ def find_mark(text: str):
 
 
 def send_message(conn, message: str, docx: bool):
-    print(settings.docs_directory)
+
     uuid_from_queue = message.decode('utf-8')[:36]
     if docx:
-        #print(message.decode('utf-8'))
         count_name_docx = message.decode('utf-8')[36:39]
         clear_count = int(str(count_name_docx).replace(' ', ''))
         file_name = message.decode('utf-8')[39:39 + clear_count]

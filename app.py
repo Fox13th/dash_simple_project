@@ -67,7 +67,7 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
         redis_cache_result.delete(uuid_value)
 
         paragraphs = text_in_textarea.split('\n')
-        print(paragraphs)
+
         for paragraph in paragraphs:
 
             if len(auto_detect) > 0:
@@ -253,12 +253,14 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str):
 @app.callback(
     Output('text_in', 'value'),
     Output('links-list', 'children', allow_duplicate=True),
+    Output('text_out', 'value', allow_duplicate=True),
     Input('url', 'pathname')
 )
 def select_ref(pathname: str):
+    transl_str = ''
     links = create_links(DIRECTORY_PATH)
     if not pathname or pathname == '/':
-        return "", links
+        return "", links, transl_str
 
     try:
         # file_name = pathname[1:].replace('%20', ' ')
@@ -268,16 +270,25 @@ def select_ref(pathname: str):
 
         if file_ext == 'txt':
             data_str = TXTReader(method=1).file_read(file_path)
+            transl_path = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.{file_ext}')
+            if os.path.exists(transl_path):
+                transl_str = TXTReader(method=1).file_read(transl_path)
         elif file_ext == 'docx':
             data_str = DocxReader(method=1).file_read(file_path)
+            transl_path = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.{file_ext}')
+            if os.path.exists(transl_path):
+                transl_str = DocxReader(method=1).file_read(transl_path)
         elif file_ext == 'pdf':
             converted_file = os.path.join(os.path.abspath('.'), 'temp', f'{file_name[:file_name.rfind('.')]}.docx')
             if not os.path.exists(converted_file):
                 PDF2DOCX().func_covert(file_path, converted_file)
             data_str = DocxReader(method=1).file_read(converted_file)
+            transl_path = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.docx')
+            if os.path.exists(transl_path):
+                transl_str = DocxReader(method=1).file_read(transl_path)
         else:
             data_str = f'Файл {file_name} не поддерживается'
-        return data_str, links
+        return data_str, links, transl_str
     except Exception as e:
         return f'Ошибка при обработке файла: {str(e)}'
 
