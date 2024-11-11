@@ -23,11 +23,12 @@ def get_content():
                                      'alignItems': 'center',
                                      'justifyContent': 'center',
                                      'gap': '10px',
-                                     'margin': '340px',
+                                     'margin': '350px auto',
+                                     'maxWidth': '800px',
                                      'margin-top': '100px',
                                      'background-color': '#f8f9fa',
                                      'border': '2px solid lightgray',
-                                     'padding': '10px',
+                                     'padding': '20px',
                                      'borderRadius': '5px',
                                      'boxShadow': '2px 2px 10px rgba(0, 0, 0, 0.1)'
                                      },
@@ -58,38 +59,39 @@ def get_content():
 
                                   html.Div(children=[
                                       html.Div(children=[
-                                          html.Label("Выберите язык (Целевой):"),
+                                          html.Label("Выберите язык (целевой):"),
                                           dcc.Dropdown(
                                               id='language-dst',
                                               options=[
                                                   {'label': 'Английский', 'value': 'en'},
                                                   {'label': 'Русский', 'value': 'ru'},
-                                                  {'label': 'Испанский', 'value': 'es'}
                                               ],
                                               placeholder='Выберите язык',
                                               style={'width': '300px', 'height': '30px'}
                                           ),
-                                          html.Label('  aaa')
-                                      ])
+                                      ],
+                                      style={'margin-bottom': '30px'})
                                   ]),
 
-                                  html.Button('', id='translate-button',
-                                              className='button',
-                                              style={
-                                                  'display': 'flex',
-                                                  'width': '75px',
-                                                  'height': '75px',
-                                                  'border': 'none',
-                                                  'margin-top': '20px',
-                                                  'margin-left': '20px',
-                                                  'border-radius': '40px',
-                                                  'box-shadow': '1px 1px 5px black',
-                                                  'background': 'none',
-                                                  'background-image': "url('./assets/icon.svg')",
-                                                  'background-size': 'cover',
-                                                  'background-repeat': 'no-repeat',
-                                                  'transition': 'transform 0.1s'
-                                              }),
+                                  html.Button(
+                                      children=[
+                                          html.Img(src='./assets/translate.svg', style={'height': '30px', 'marginRight':'10px'}),
+                                          'Перевести'
+                                      ],
+                                      id='translate-button',
+                                      className='button',
+                                      style={
+                                          'display': 'flex',
+                                          'alignItems': 'center',
+                                          'width': '120px',
+                                          'height': '40px',
+                                          'border': 'none',
+                                          'margin-left': '20px',
+                                          'border-radius': '5px',
+                                          'box-shadow': '1px 1px 5px black',
+                                          'background': 'none',
+                                          'transition': 'transform 0.1s'
+                                      }),
                               ]),
                  ]),
 
@@ -97,7 +99,8 @@ def get_content():
                         'flexDirection': 'row',
                         'gap': '10px',
                         'height': '40vh',
-                        'margin': '100px',
+                        'margin': '100px auto',
+                        'maxWidth': '1300px',
                         'margin-top': '150px',
                         'background-color': '#f8f9fa',
                         'border': '2px solid lightgray',

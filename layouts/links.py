@@ -20,14 +20,10 @@ def create_links(dir_path: str) -> list:
                 'color': '#E0115F',
                 'textDecoration': 'none'}
 
-            print(f'{file[:file.rfind('.')]}_translated.docx')
-            # print(f'{file[:file.rfind('.')]}_translated.docx')
             if os.path.exists(os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.docx')) or os.path.exists(
                     os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.txt')):
-                print(f'{file[:file.rfind('.')]}_translated.docx')
                 style_links['color'] = 'green'
             else:
-                # print('not')
                 style_links['color'] = 'E0115F'
 
             links.append(html.Li(dcc.Link(children=[html.Img(src=f'./assets/{file_ext}.svg',
