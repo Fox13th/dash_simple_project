@@ -6,7 +6,7 @@ import urllib
 import uuid
 
 import redis
-from dash import Dash, html, Input, Output, State
+from dash import Dash, html, Input, Output, State, dash
 from dotenv import set_key, load_dotenv
 from flask import Flask
 from pdf2docx import Converter
@@ -36,6 +36,18 @@ app.layout = html.Div(style={'display': 'flex'})
 app.layout.children = [get_sidebar(DIRECTORY_PATH), get_content()]
 
 load_dotenv()
+
+
+@app.callback(
+    Output('text_in', 'value', allow_duplicate=True),
+    Output('text_out', 'value', allow_duplicate=True),
+    Output('url', 'href'),
+    Input('clear-button', 'n_clicks'),
+)
+def insert_input_text(n_clicks: int):
+    if int(n_clicks) > 0:
+        return '', '', '/'
+    return dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(
@@ -89,17 +101,27 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
     State('text_in', 'value'),
     State('text_out', 'value')
 )
+
+
+@app.callback(
+    Output('text_out', 'value'),
+    Output('translate-button', 'disabled', allow_duplicate=True),
+    Input('interval-component', 'n_intervals'),
+    State('uuid-store', 'data'),
+    State('text_in', 'value'),
+    State('text_out', 'value')
+)
 def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out_ta: str):
     if uuid_data:
+
+        but_enable = False
 
         if text_in_ta and text_out_ta:
             # Здесь надо придумать что-то, чтобы при повторной передаче не приходили остатки
             if len(text_out_ta.split('\n')) < len(text_in_ta.split('\n')):
-                but_enable = False
+                but_enable = True
             else:
                 but_enable = False
-        else:
-            but_enable = False
 
         result_session = redis_cache_result.get(uuid_data)
         if result_session:

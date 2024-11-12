@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     docs_directory: str
     lang_model: str
+    lang_list: str
 
     clear_queue: bool = True
 

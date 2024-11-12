@@ -3,8 +3,13 @@ body {
 }
 
 .button:active {
-    transform: scale(0.95);  /* Уменьшаем размер кнопки при нажатии */
-    background-color: #0056b3;  /* Меняем цвет фона при нажатии */
+    transform: scale(0.95);
+    background-color: #0056b3;
+}
+
+#translate-button:hover {
+    background-color: #9B111E;
+    color: #FDF5E6;
 }
 
 #load_button {
@@ -13,4 +18,9 @@ body {
 
 #li_ref:hover {
     transform: scale(1.05);
+}
+
+.VirtualizedSelectFocusedOption {
+    background-color: #fce6eb;
+    color: #8B7B6A;
 }
