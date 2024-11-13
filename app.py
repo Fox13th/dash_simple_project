@@ -64,20 +64,26 @@ def generate_uuid(existing_uuid):
 # Коллбэк для обработки обычного перевода
 @app.callback(
     Output('output-text', 'children'),
+    Output('text_out', 'value', allow_duplicate=True),
     Output('translate-button', 'disabled', allow_duplicate=True),
+    Output('button-state', 'data', allow_duplicate=True),
     Input('translate-button', 'n_clicks'),
     State('language-dropdown', 'value'),
     State('uuid-store', 'data'),
+    State('button-state', 'data'),
     State('text_in', 'value'),
-    State('checklist', 'value')
+    State('checklist', 'value'),
+    prevent_initial_call=True
 )
-def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in_textarea: str, auto_detect: list):
+def translate_text(n_clicks: int, target_language: str, uuid_value: str, button_state: dict, text_in_textarea: str,
+                   auto_detect: list):
     if n_clicks is None:
         return "Введите текст и выберите язык для перевода.", False
 
     if (target_language or len(auto_detect) > 0) and text_in_textarea:
         redis_cache_result.delete(uuid_value)
 
+        button_state['disabled'] = True
         paragraphs = text_in_textarea.split('\n')
 
         for paragraph in paragraphs:
@@ -89,47 +95,34 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, text_in
                 lang_src = target_language
 
             redis_db.rpush('message_queue', f'{uuid_value}{lang_src}{paragraph}')
-        return 'Отправлено в очередь', True
-    return "Пожалуйста, выберите язык.", False
+        return 'Отправлено в очередь', '', button_state['disabled'], button_state
+    # return "Пожалуйста, выберите язык.", dash.no_update
 
 
 @app.callback(
     Output('text_out', 'value'),
     Output('translate-button', 'disabled', allow_duplicate=True),
+    Output('button-state', 'data', allow_duplicate=True),
     Input('interval-component', 'n_intervals'),
     State('uuid-store', 'data'),
+    State('button-state', 'data'),
     State('text_in', 'value'),
-    State('text_out', 'value')
+    State('text_out', 'value'),
 )
-
-
-@app.callback(
-    Output('text_out', 'value'),
-    Output('translate-button', 'disabled', allow_duplicate=True),
-    Input('interval-component', 'n_intervals'),
-    State('uuid-store', 'data'),
-    State('text_in', 'value'),
-    State('text_out', 'value')
-)
-def show_result_in_cache(n_inter: int, uuid_data: str, text_in_ta: str, text_out_ta: str):
+def show_result_in_cache(n_inter: int, uuid_data: str, button_state: dict, text_in_ta: str, text_out_ta: str):
     if uuid_data:
 
-        but_enable = False
-
         if text_in_ta and text_out_ta:
-            # Здесь надо придумать что-то, чтобы при повторной передаче не приходили остатки
-            if len(text_out_ta.split('\n')) < len(text_in_ta.split('\n')):
-                but_enable = True
-            else:
-                but_enable = False
+            if len(text_out_ta.split('\n')) >= len(text_in_ta.split('\n')):
+                button_state['disabled'] = False
 
         result_session = redis_cache_result.get(uuid_data)
         if result_session:
-            return result_session.decode('utf-8'), but_enable  # , links
+            return result_session.decode('utf-8'), button_state['disabled'], button_state  # , but_enable  # , links
         else:
-            return None, False
+            return None, dash.no_update, button_state
     else:
-        return None, False
+        return None, dash.no_update, button_state
 
 
 @app.callback(

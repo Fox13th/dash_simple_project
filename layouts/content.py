@@ -164,5 +164,6 @@ def get_content():
             interval=1000,
             n_intervals=0
         ),
+        dcc.Store(id='button-state', data={'disabled': False}),
         html.Div(id='output-text'),
     ])
