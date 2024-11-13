@@ -23,7 +23,6 @@ def find_mark(text: str):
 
 
 def send_message(conn, message: str, docx: bool):
-
     uuid_from_queue = message.decode('utf-8')[:36]
     if docx:
         count_name_docx = message.decode('utf-8')[36:39]
@@ -52,7 +51,7 @@ def send_message(conn, message: str, docx: bool):
         message_to_send = ' '
 
     conn.sendall(message_to_send.encode('utf-8'))
-    recv_msg = conn.recv(1024)
+    recv_msg = conn.recv(8192)
 
     if docx:
         match mark:
@@ -109,7 +108,7 @@ def client_program(redis_db: redis.Redis, redis_cache_result: redis.Redis):
                         if not uuid_from_queue == '000000000000000000000000000000000000':
                             print(f'Сообщение отправлено: {message_to_send}')
 
-                        recv_msg = client_socket.recv(1024)
+                        recv_msg = client_socket.recv(8192)
                         if not uuid_from_queue == '000000000000000000000000000000000000':
                             print(f"Сообщение от сервера для {uuid_from_queue}:", f'{recv_msg.decode("utf-8")}\n')
 
@@ -127,5 +126,5 @@ def client_program(redis_db: redis.Redis, redis_cache_result: redis.Redis):
                         send_message(client_socket, msg_docx, docx=True)
 
         except Exception as err:
-           logging.error("Произошла ошибка: %s", err)
-           time.sleep(5)
+            logging.error("Произошла ошибка: %s", err)
+            time.sleep(5)

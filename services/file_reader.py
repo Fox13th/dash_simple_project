@@ -101,4 +101,4 @@ class TXTReader(FileReader):
                     data_str += data
                 return data_str
             case _:
-                return lines#[line.replace('\n', '') for line in lines]
+                return lines

@@ -10,5 +10,5 @@ class LangDetect:
         self.model = fasttext.load_model(settings.lang_model)
 
     def detection(self, text: str):
-        prediction = self.model.predict(text)
+        prediction = self.model.predict(text.replace('\n', ' '))
         return {'language': prediction[0][0][9:], 'confidence': prediction[1][0]}

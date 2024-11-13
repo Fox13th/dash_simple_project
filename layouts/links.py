@@ -10,7 +10,7 @@ def create_links(dir_path: str) -> list:
     for file in files:
         file_ext = file[file.rfind('.') + 1:]
         not_end = ('_translated.docx', '_translated.txt')
-        if file_ext in ['doc', 'docx', 'pdf', 'txt'] and not file.endswith(not_end):
+        if file_ext in ['doc', 'docx', 'pdf', 'txt', 'odt', 'rtf', 'ppt', 'pptx'] and not file.endswith(not_end):
             file_path = os.path.join(dir_path, file)
             if file_ext == 'docx':
                 file_ext = 'doc'
