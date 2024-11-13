@@ -143,6 +143,17 @@ def update_text_in(text_in: str, button_state: dict, uuid: str):
 
 
 @app.callback(
+    Output('clear-button', 'disabled'),
+    Input('text_in', 'readOnly')
+)
+def update_text_in(text_in_state):
+    if text_in_state:
+        return True
+    else:
+        return False
+
+
+@app.callback(
     Output('links-list', 'children', allow_duplicate=True),
     Input('refresh-button', 'n_clicks'),
     State('url', 'href'),
