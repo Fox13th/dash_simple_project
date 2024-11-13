@@ -161,7 +161,7 @@ def get_content():
 
         dcc.Interval(
             id='interval-component',
-            interval=1000,
+            interval=500,
             n_intervals=0
         ),
         dcc.Store(id='button-state', data={'disabled': False}),

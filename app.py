@@ -68,6 +68,7 @@ def generate_uuid(existing_uuid):
     Output('text_out', 'value', allow_duplicate=True),
     Output('translate-button', 'disabled', allow_duplicate=True),
     Output('button-state', 'data', allow_duplicate=True),
+    Output('text_in', 'readOnly', allow_duplicate=True),
     Input('translate-button', 'n_clicks'),
     State('language-dropdown', 'value'),
     State('uuid-store', 'data'),
@@ -96,7 +97,7 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, button_
                 lang_src = target_language
 
             redis_db.rpush('message_queue', f'{uuid_value}{lang_src}{paragraph}')
-        return 'Отправлено в очередь', '', button_state['disabled'], button_state
+        return 'Отправлено в очередь', '', button_state['disabled'], button_state, True
     # return "Пожалуйста, выберите язык.", dash.no_update
 
 
@@ -104,6 +105,7 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, button_
     Output('text_out', 'value'),
     Output('translate-button', 'disabled', allow_duplicate=True),
     Output('button-state', 'data', allow_duplicate=True),
+    Output('text_in', 'readOnly', allow_duplicate=True),
     Input('interval-component', 'n_intervals'),
     State('uuid-store', 'data'),
     State('button-state', 'data'),
@@ -113,17 +115,31 @@ def translate_text(n_clicks: int, target_language: str, uuid_value: str, button_
 def show_result_in_cache(n_inter: int, uuid_data: str, button_state: dict, text_in_ta: str, text_out_ta: str):
     if uuid_data:
 
-        if text_in_ta and text_out_ta:
-            if len(text_out_ta.split('\n')) >= len(text_in_ta.split('\n')):
-                button_state['disabled'] = False
-
         result_session = redis_cache_result.get(uuid_data)
         if result_session:
-            return result_session.decode('utf-8'), button_state['disabled'], button_state
+            if len(result_session.decode('utf-8').split('\n')) < len(text_in_ta.split('\n')):
+                button_state['disabled'] = True
+                return result_session.decode('utf-8'), button_state['disabled'], button_state, True
+            else:
+                button_state['disabled'] = False
+                return result_session.decode('utf-8'), button_state['disabled'], button_state, False
         else:
-            return None, dash.no_update, button_state
+            return None, dash.no_update, button_state, dash.no_update
     else:
-        return None, dash.no_update, button_state
+        return None, dash.no_update, button_state, dash.no_update
+
+
+@app.callback(
+    Output('translate-button', 'disabled', allow_duplicate=True),
+    Output('button-state', 'data', allow_duplicate=True),
+    Input('text_in', 'value'),
+    State('button-state', 'data'),
+    State('uuid-store', 'data')
+)
+def update_text_in(text_in: str, button_state: dict, uuid: str):
+    button_state['disabled'] = False
+    redis_cache_result.delete(uuid)
+    return button_state['disabled'], button_state
 
 
 @app.callback(
