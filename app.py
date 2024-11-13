@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import threading
@@ -233,32 +234,45 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str):
         is_disabled = True
         for file_name in os.listdir(DIRECTORY_PATH):
             file_ext = file_name[file_name.rfind('.') + 1:]
-            if file_ext in ['pdf']:
-                if not os.path.exists('./temp'):
-                    os.mkdir('./temp')
+            only_name = f'{file_name[:file_name.rfind('.')]}_translated.docx'
 
-                PDF2DOCX().func_covert(os.path.join(DIRECTORY_PATH, file_name),
-                                       f'./temp/{file_name[:file_name.rfind('.')]}.docx')
+            try:
+                if file_ext in ['pdf']:
+                    if not os.path.exists('./temp'):
+                        os.mkdir('./temp')
 
-                docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, './temp')
+                    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
+                    if not os.path.exists(converted_path):
+                        PDF2DOCX().func_covert(os.path.join(DIRECTORY_PATH, file_name), converted_path)
 
-            elif file_ext == 'docx':
-                docx_processing(file_name, uuid_value, )
+                    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)):
+                        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, './temp')
 
-            elif file_ext == 'txt':
-                only_name = f'{file_name[:file_name.rfind('.')]}_translated.txt'
+                elif file_ext == 'docx':
 
-                count_name = str(len(only_name))
-                if len(count_name) < 3:
-                    for i in range(3 - len(count_name)):
-                        count_name += " "
+                    if not file_name.endswith('_translated.docx') and not os.path.exists(
+                            os.path.join(DIRECTORY_PATH, only_name)):
+                        docx_processing(file_name, uuid_value, )
 
-                txt_lines = TXTReader(2).file_read(os.path.join(DIRECTORY_PATH, file_name))
+                elif file_ext == 'txt' and not file_name.endswith('_translated.txt'):
+                    only_name = f'{file_name[:file_name.rfind('.')]}_translated.txt'
 
-                for i_line, line in enumerate(txt_lines):
-                    lang_old = LangDetect().detection(line.replace('\n', ''))
-                    string_to_send = f'{uuid_value}{count_name}{only_name}{i_line}_txt{lang_old['language']}{line}'
-                    redis_db.rpush('docx_queue', string_to_send)
+                    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)):
+                        count_name = str(len(only_name))
+                        if len(count_name) < 3:
+                            for i in range(3 - len(count_name)):
+                                count_name += " "
+
+                        txt_lines = TXTReader(2).file_read(os.path.join(DIRECTORY_PATH, file_name))
+
+                        for i_line, line in enumerate(txt_lines):
+                            lang_old = LangDetect().detection(line.replace('\n', ''))
+                            string_to_send = f'{uuid_value}{count_name}{only_name}{i_line}_txt{lang_old['language']}{line}'
+                            redis_db.rpush('docx_queue', string_to_send)
+
+            except Exception as err:
+                logging.error(f'Возникла ошибка при обрабработки документа: {err}')
+                continue
 
         is_disabled = False
         return is_disabled
