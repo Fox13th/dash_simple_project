@@ -32,7 +32,11 @@ redis_cache_result = redis.Redis(host=settings.redis_host, port=settings.redis_p
 server = Flask(__name__)
 server.secret_key = 'your_secret_key'  # Задаем секретный ключ для сессий
 
-app = Dash(__name__, server=server, prevent_initial_callbacks='initial_duplicate')
+app = Dash(__name__, server=server, update_title=None, prevent_initial_callbacks='initial_duplicate')
+
+app.title = "Translator"
+app._favicon = "icon.ico"
+
 app.layout = html.Div(style={'display': 'flex'})
 app.layout.children = [get_sidebar(DIRECTORY_PATH), get_content()]
 
