@@ -42,6 +42,16 @@ app.layout.children = [get_sidebar(DIRECTORY_PATH), get_content()]
 
 load_dotenv()
 
+# Обработчик клика по кнопке для отображения уведомления
+@app.callback(
+    Output("toast", "is_open"),
+    Input("translate-button", "disabled"),
+    prevent_initial_call=True
+)
+def toggle_toast(but_status):
+    if not but_status:
+        return True
+    return False
 
 @app.callback(
     Output('text_in', 'value', allow_duplicate=True),

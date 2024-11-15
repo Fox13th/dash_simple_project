@@ -1,4 +1,5 @@
 from dash import dcc, html
+import dash_bootstrap_components as dbc
 
 from core import config
 
@@ -17,7 +18,14 @@ def read_list_lang() -> dict[str]:
 
 def get_content():
     return html.Div([
-
+        #dbc.Toast(
+        #    "Это уведомление",
+        #    id="toast",
+        #    is_open=False,
+        #    header="Уведомление",
+        #    duration=4000,  # Время отображения (в миллисекундах)
+        #    style={"position": "fixed", "top": 20, "right": 20}
+        #),
         dcc.Store(id='uuid-store'),  # Хранение UUID
         html.Div(style={'background-color': '#8f060a',
                         'height': '250px',
