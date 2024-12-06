@@ -18,6 +18,7 @@ def get_sidebar(path_dir: str):
         [
             dcc.Store(id='file-store', data=[]),
             dcc.Store(id='checkbox-store', data=[]),
+            dcc.Download(id="download-zip"),
             html.Div(id='checkbox-container'),
             html.Div(children=[
                 html.H2("Ссылки на файлы", style={'color': '#4d705c'}),

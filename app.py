@@ -2,10 +2,13 @@ import base64
 import logging
 import os
 import shutil
+import tempfile
 import threading
 import time
 import urllib
 import uuid
+import zipfile
+from io import BytesIO
 
 import redis
 from dash import Dash, html, Input, Output, State, dash, dcc
@@ -48,40 +51,51 @@ load_dotenv()
 
 
 @app.callback(
-    Output('output-text', 'children', allow_duplicate=True),
-    Input('save-button', 'n_clicks'),
+    Output("download-zip", "data"),
+    Input("save-button", "n_clicks"),
     State({'type': 'checkbox', 'index': ALL}, 'value'),
     prevent_initial_call=True
 )
-def save_transl(n_clicks, chk_box):
-    if n_clicks > 0:
-        files_save = []
-        for i in range(len(chk_box)):
-            try:
-                files_save.append(chk_box[i][0])
-            except IndexError:
-                continue
+def download_files(n_clicks, chk_box):
+    files_save = []
+    for i in range(len(chk_box)):
+        try:
+            files_save.append(chk_box[i][0])
+        except IndexError:
+            continue
 
-        for file in files_save:
-            return dcc.send_file(
-                f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.docx'
-            )
-            # if file.endswith(('docx', 'doc', 'odt', 'rtf', 'ppt', 'pptx')):
-            #    if os.path.exists(f'{settings.docs_directory}/{file}'):
-            #        os.remove(f'{settings.docs_directory}/{file}')
-            #    if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.docx'):
-            #        os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.docx')
-            #    if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.docx'):
-            #        os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.docx')
-        #
-        # if file.endswith(('pdf', 'txt')):
-        #    if os.path.exists(f'{settings.docs_directory}/{file}'):
-        #        os.remove(f'{settings.docs_directory}/{file}')
-        #    if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.txt'):
-        #        os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.txt')
-        #    if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.txt'):
-        #        os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.txt')
-        return ''
+    zip_buffer = BytesIO()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
+        with zipfile.ZipFile(temp_zip, "w") as zip_file:
+            for file_name in files_save:
+
+                if file_name.endswith(('docx', 'doc', 'odt', 'rtf', 'ppt', 'pptx')):
+                    file_ext = 'docx'
+                elif file_name.endswith(('pdf', 'txt')):
+                    file_ext = 'txt'
+
+                if os.path.exists(f'{settings.docs_directory}/{file_name}'):
+                    file_path = f'{settings.docs_directory}/{file_name}'
+                    zip_file.write(file_path, arcname=file_name)
+                if os.path.exists(
+                        f'{settings.docs_directory}/{file_name[:file_name.rfind('.')]}_translated.{file_ext}'):
+                    f_name = f'{file_name[:file_name.rfind('.')]}_translated.{file_ext}'
+                    file_path = f'{settings.docs_directory}/{f_name}'
+                    zip_file.write(file_path, arcname=f_name)
+                if os.path.exists(
+                        f'{settings.docs_directory}/{file_name[:file_name.rfind('.')]}_translated_done.{file_ext}'):
+                    f_name = f'{file_name[:file_name.rfind('.')]}_translated_done.{file_ext}'
+                    file_path = f'{settings.docs_directory}/{f_name}'
+                    zip_file.write(file_path, arcname=f_name)
+
+        zip_buffer.seek(0)
+        temp_zip_path = temp_zip.name
+
+    data = dcc.send_file(temp_zip_path, filename="translated_files.zip")
+
+    os.remove(temp_zip_path)
+
+    return data
 
 
 @app.callback(
@@ -152,7 +166,8 @@ def select_unselect(n_clicks: int, chk_box: list, dir_path: str, checkbox_states
         files = os.listdir(dir_path)
         # Получаем список всех файлов, которые могут быть выбраны
         selectable_files = [file for file in files if not file.endswith(('_translated.docx', '_translated_done.docx',
-                                                                         '_translated.txt', '_translated_done.txt')) and not os.path.isdir(
+                                                                         '_translated.txt',
+                                                                         '_translated_done.txt')) and not os.path.isdir(
             os.path.join(DIRECTORY_PATH, file))]
 
         if n_clicks % 2 == 0:
@@ -163,6 +178,7 @@ def select_unselect(n_clicks: int, chk_box: list, dir_path: str, checkbox_states
             chk_selected = [[file] for file in selectable_files]
             return chk_selected, chk_selected
     return checkbox_states, chk_box
+
 
 @app.callback(
     Output('text_in', 'value', allow_duplicate=True),
