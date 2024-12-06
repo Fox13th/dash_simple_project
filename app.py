@@ -141,7 +141,7 @@ def select_unselect(n_clicks: int, chk_box: list, dir_path: str):
 def insert_input_text(n_clicks: int):
     if n_clicks:
         if int(n_clicks) > 0:
-            return '', '', f'http://{settings.ip_web_server}:{settings.port_web_server}/'
+            return '', '', f'/'
     return dash.no_update, dash.no_update, dash.no_update
 
 
@@ -288,15 +288,16 @@ def update_text_in(text_in_state):
     Output('links-list', 'children', allow_duplicate=True),
     Output('input_dir', 'value'),
     Output('url', 'href', allow_duplicate=True),
+    Input('interval-component', 'n_intervals'),
     Input('refresh-button', 'n_clicks'),
     State('url', 'href'),
     State('input_dir', 'value'),
     prevent_initial_call=True
 )
-def refresh_docs(n_click: int | None, href: str, dir_docs: str):  # , n_int: int):
+def refresh_docs(n_interv: int, n_click: int | None, href: str, dir_docs: str):  # , n_int: int):
     global DIRECTORY_PATH
 
-    if n_click is not None:
+    if n_click:
         if n_click > 0:
             if not os.path.exists(dir_docs):
                 return [html.Li(html.A(children=[html.Img(src=f'./assets/error-page.svg',
@@ -340,7 +341,7 @@ def refresh_docs(n_click: int | None, href: str, dir_docs: str):  # , n_int: int
             # print(f'create2 {settings.docs_directory}')
 
             return create_links(DIRECTORY_PATH), settings.docs_directory, '/'
-    # return dash.no_update, dash.no_update, dash.no_update
+    return create_links(DIRECTORY_PATH), dash.no_update, dash.no_update
 
 
 def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, type_part: str, lang_dst: str, base_m):
@@ -623,14 +624,10 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
 )
 def select_ref(href: str, pathname: str):
     transl_str = ''
-    # print(f'href {href}')
-    # print(f'select {DIRECTORY_PATH} {pathname}')
 
     links = create_links(DIRECTORY_PATH)
-    if href == f'http://{settings.ip_web_server}:{settings.port_web_server}/':
-        return "", links, transl_str, DIRECTORY_PATH
 
-    if not pathname or pathname == '/':
+    if href == f'/':
         return "", links, transl_str, DIRECTORY_PATH
 
     try:
