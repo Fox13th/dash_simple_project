@@ -10,7 +10,6 @@ import uuid
 import redis
 from dash import Dash, html, Input, Output, State, dash, dcc
 from dash.dependencies import ALL
-from PyQt5.QtWidgets import QApplication, QFileDialog
 
 from dotenv import set_key, load_dotenv
 from flask import Flask
@@ -38,7 +37,7 @@ server.secret_key = 'your_secret_key'  # Задаем секретный клю�
 
 app = Dash(__name__, server=server, update_title=None, prevent_initial_callbacks='initial_duplicate')
 
-app.title = 'SDT "Нефрит"'
+app.title = 'SDT "Переводчик"'
 app._favicon = "icon.ico"
 
 app.layout = html.Div(style={'display': 'flex'})
@@ -52,6 +51,7 @@ load_dotenv()
     Output('output-text', 'children', allow_duplicate=True),
     Input('delete-button', 'n_clicks'),
     State({'type': 'checkbox', 'index': ALL}, 'value'),
+    prevent_initial_call=True
 )
 def delete_transl(n_clicks, chk_box):
     if n_clicks > 0:
@@ -80,24 +80,6 @@ def delete_transl(n_clicks, chk_box):
                     os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.txt')
         return ''
 
-
-def open_file_dialog(n1):
-    app = QApplication([])
-    directory = QFileDialog.getExistingDirectory(None, "Select a Directory")
-    app.quit()
-    return directory
-
-
-# @app.callback(
-#    Output('input_dir', 'value', allow_duplicate=True),
-#    Input('btn-select-dir', 'n_clicks')
-# )
-# def update_output(n_clicks):
-#    if n_clicks > 0:
-#        directory = open_file_dialog(n_clicks)
-#        if directory:  # Если директория выбрана
-#            return directory
-#    return dash.no_update
 
 @app.callback(
     Output('output-text', 'value', allow_duplicate=True),
@@ -130,7 +112,8 @@ def save_file(contents, filenames):
     Output({'type': 'checkbox', 'index': ALL}, 'value'),
     Input('btn-select-files', 'n_clicks'),
     State({'type': 'checkbox', 'index': ALL}, 'value'),
-    State('input_dir', 'value')
+    State('input_dir', 'value'),
+    prevent_initial_call=True
 )
 def select_unselect(n_clicks: int, chk_box: list, dir_path: str):
     if n_clicks > 0:
@@ -153,10 +136,12 @@ def select_unselect(n_clicks: int, chk_box: list, dir_path: str):
     Output('text_out', 'value', allow_duplicate=True),
     Output('url', 'href'),
     Input('clear-button', 'n_clicks'),
+    prevent_initial_call=True
 )
 def insert_input_text(n_clicks: int):
-    if int(n_clicks) > 0:
-        return '', '', f'http://{settings.ip_web_server}:{settings.port_web_server}/'
+    if n_clicks:
+        if int(n_clicks) > 0:
+            return '', '', f'http://{settings.ip_web_server}:{settings.port_web_server}/'
     return dash.no_update, dash.no_update, dash.no_update
 
 
@@ -174,6 +159,7 @@ def generate_uuid(existing_uuid):
 @app.callback(Output('output-text', 'children', allow_duplicate=True),
               Output('translate-button', 'disabled'),
               Input('translate-button', 'n_clicks'),
+              prevent_initial_call=True
               )
 def transl_but_pushed(n_clicks: int):
     if n_clicks > 0:
@@ -451,7 +437,8 @@ def docx_processing(file_name: str, uuid: str, lang_dst: str, base_m, tmp_path: 
     State('input_dir', 'value'),
     State({'type': 'checkbox', 'index': ALL}, 'value'),
     State('language-dst', 'value'),
-    State('checklist_base', 'value')
+    State('checklist_base', 'value'),
+    prevent_initial_call=True
 )
 def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir: str, chkbox, lang_dst: str,
                    base_model):
@@ -493,7 +480,8 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                     only_name = f'{file_name[:file_name.rfind('.')]}_translated.txt'
                     only_name_done = f'{file_name[:file_name.rfind('.')]}_translated_done.txt'
 
-                    if not os.path.exists(f'{DIRECTORY_PATH}/{only_name}') or not os.path.exists(f'{DIRECTORY_PATH}/{only_name_done}'):
+                    if not os.path.exists(f'{DIRECTORY_PATH}/{only_name}') or not os.path.exists(
+                            f'{DIRECTORY_PATH}/{only_name_done}'):
                         PDF2TXT().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
 
                         count_name = str(len(only_name))
