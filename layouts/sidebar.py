@@ -1,18 +1,30 @@
+import os
+
+import dotenv
 from dash import html, dcc
 
+from core import config
 from layouts.links import create_links
+
+settings = config.get_settings()
+
+dotenv.load_dotenv()
 
 
 def get_sidebar(path_dir: str):
+    path_dir = os.environ.get('DOCS_DIRECTORY')
+
     return html.Div(
         [
+            dcc.Store(id='file-store', data=[]),
+            html.Div(id='checkbox-container'),
             html.Div(children=[
-                html.H2("Ссылки на файлы", style={'color': '#E0115F'}),
+                html.H2("Ссылки на файлы", style={'color': '#4d705c'}),
                 dcc.Location(id='url', refresh=False),
                 dcc.Loading(
                     id='load_button',
                     type='circle',
-                    color='#E0115F',
+                    color='#00a86b',#00a86b',
                     children=[
                         html.Button('', id='all-button',
                                     className='button',
@@ -45,7 +57,44 @@ def get_sidebar(path_dir: str):
                             'justifyContent': 'center',
                             },
                      children=[
+                         html.Button('', id="btn-select-files",
+                                     n_clicks=0,
+                                     className='button',
+                                     style={
+                                         'display': 'flex',
+                                         'width': '20px',
+                                         'height': '20px',
+                                         'border': 'none',
+                                         # 'margin-left': '10px',
+                                         'margin-right': '40px',
+                                         'border-radius': '5px',
+                                         'background': 'none',
+                                         'background-image': "url('./assets/select.svg')",
+                                         'background-size': 'cover',
+                                         'background-repeat': 'no-repeat',
+                                         'transition': 'transform 0.1s'
+                                     }),
                          dcc.Input(id='input_dir', value=path_dir, style={'width': '195px'}),
+                         dcc.Upload(
+                             id='upload-data',
+                             children=html.Button('', id="btn-select-dir",
+                                                  n_clicks=0,
+                                                  className='button',
+                                                  style={
+                                                      'display': 'flex',
+                                                      'width': '25px',
+                                                      'height': '25px',
+                                                      'border': 'none',
+                                                      'margin-left': '20px',
+                                                      'border-radius': '5px',
+                                                      'background': 'none',
+                                                      'background-image': "url('./assets/folder_open.svg')",
+                                                      'background-size': 'cover',
+                                                      'background-repeat': 'no-repeat',
+                                                      'transition': 'transform 0.1s'
+                                                  }),
+                             multiple=True  # разрешить загрузку только одного файла
+                         ),
                          html.Button('', id='refresh-button',
                                      className='button',
                                      style={
@@ -57,6 +106,22 @@ def get_sidebar(path_dir: str):
                                          'border-radius': '40px',
                                          'background': 'none',
                                          'background-image': "url('./assets/refresh.svg')",
+                                         'background-size': 'cover',
+                                         'background-repeat': 'no-repeat',
+
+                                         'transition': 'transform 0.1s'
+                                     }),
+                         html.Button('', id='delete-button',
+                                     className='button',
+                                     style={
+                                         'display': 'flex',
+                                         'width': '25px',
+                                         'height': '25px',
+                                         'border': 'none',
+                                         'margin-left': '20px',
+                                         'border-radius': '5px',
+                                         'background': 'none',
+                                         'background-image': "url('./assets/delete.svg')",
                                          'background-size': 'cover',
                                          'background-repeat': 'no-repeat',
 

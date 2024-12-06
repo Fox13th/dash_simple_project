@@ -8,6 +8,9 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
+    ip_web_server: str = '0.0.0.0'
+    port_web_server: int = 8050
+
     redis_host: str = '127.0.0.1'
     redis_port: int = 6379
     redis_expiration: int = 300

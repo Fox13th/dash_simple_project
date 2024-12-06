@@ -1,6 +1,12 @@
+import os
+import subprocess
 from abc import ABC, abstractmethod
 
 from docx import Document
+from core import config
+from requests.compat import chardet
+
+settings = config.get_settings()
 
 
 class FileReader(ABC):
@@ -20,16 +26,35 @@ class DocxReader(FileReader):
         match self.method:
             case 1:
                 docs_str = ''
+
+                for section in docx.sections:
+
+                    for paragraph in section.header.paragraphs:
+                        docs_str += paragraph.text + '\n'
+
+                    for paragraph in section.footer.paragraphs:
+                        docs_str += paragraph.text + '\n'
+
                 for i in range(len(docx.paragraphs)):
-                    if i < len(docx.paragraphs) - 1:
+                    # if i <= len(docx.paragraphs) - 1:
+                    if len(docx.tables) > 0:
                         docs_str += docx.paragraphs[i].text + '\n'
                     else:
-                        docs_str += docx.paragraphs[i].text
+                        if i < len(docx.paragraphs) - 1:
+                            docs_str += docx.paragraphs[i].text + '\n'
+                        else:
+                            docs_str += docx.paragraphs[i].text
 
                 for table in docx.tables:
                     for row in table.rows:
                         for cell in row.cells:
                             docs_str += cell.text + '\n'
+
+                            if cell.tables:
+                                for nested_table in cell.tables:
+                                    for nested_row in nested_table.rows:
+                                        for nested_cell in nested_row.cells:
+                                            docs_str += "  " + nested_cell.text + '\n'  # Добавляем отступ для
 
                 return docs_str
             case _:
@@ -70,7 +95,8 @@ class DocxReader(FileReader):
                         cur_cell = t_cell[i]
                         if cur_cell == '':
                             cur_cell = ' '
-                        list_table_data.append(f'table:{i_table}row:{i_row}cell:{i_cell}n_table:-1n_row:-1n_cell:-1index:{i}text:{cur_cell}')
+                        list_table_data.append(
+                            f'table:{i_table}row:{i_row}cell:{i_cell}n_table:-1n_row:-1n_cell:-1index:{i}text:{cur_cell}')
 
                     if docx.tables[i_table].rows[i_row].cells[i_cell].tables:
                         for i_nested_table, nested_table in enumerate(
@@ -92,7 +118,12 @@ class DocxReader(FileReader):
 class TXTReader(FileReader):
 
     def file_read(self, file: str):
-        with open(file, 'r', encoding='utf-8') as f_read:
+        with open(file, 'rb') as f:
+            raw_data = f.read()
+            result = chardet.detect(raw_data)
+            encoding = result['encoding']
+
+        with open(file, 'r', encoding=encoding) as f_read:
             lines = f_read.readlines()
         match self.method:
             case 1:
@@ -102,3 +133,20 @@ class TXTReader(FileReader):
                 return data_str
             case _:
                 return lines
+
+
+class PDFReader(FileReader):
+    def file_read(self, file: str):
+        try:
+            if not os.path.isdir('./temp'):
+                os.mkdir('./temp')
+            # Запускаем команду pdftotext
+            result = subprocess.run(['pdftotext', '-enc', 'UTF-8', file, f'./temp/{file[file.rfind('\\'):-3]}txt'],
+                                    check=True, text=True, capture_output=True)
+            # print(result.stdout)  # Выводим извлеченный текст
+            return TXTReader(method=1).file_read(f'./temp/{file[file.rfind('\\'):-3]}txt')
+
+        except subprocess.CalledProcessError as e:
+            print(f"Ошибка при извлечении текста: {e}")
+        except FileNotFoundError:
+            print("Не удалось найти исполняемый файл pdftotext. Убедитесь, что xpdf установлен и путь добавлен в PATH.")

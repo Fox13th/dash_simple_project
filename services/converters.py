@@ -1,4 +1,5 @@
 import os
+import subprocess
 from abc import ABC, abstractmethod
 
 from pdf2docx import Converter
@@ -17,6 +18,19 @@ class PDF2DOCX(FileConverter):
         cv = Converter(scr_file)
         cv.convert(dst_file, start=0, end=None)
         cv.close()
+
+
+class PDF2TXT(FileConverter):
+    def func_covert(self, scr_file: str, dst_file: str):
+        try:
+            # Запускаем команду pdftotext
+            result = subprocess.run(['pdftotext', '-enc', 'UTF-8', scr_file, dst_file], check=True, text=True, capture_output=True)
+            # print(result.stdout)  # Выводим извлеченный текст
+        except subprocess.CalledProcessError as e:
+            print(f"Ошибка при извлечении текста: {e}")
+        except FileNotFoundError:
+            print("Не удалось найти исполняемый файл pdftotext. Убедитесь, что xpdf установлен и путь добавлен в PATH.")
+        return result.stdout
 
 
 class DOC2DOCX(FileConverter):

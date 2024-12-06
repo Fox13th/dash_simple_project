@@ -1,5 +1,4 @@
 from dash import dcc, html
-import dash_bootstrap_components as dbc
 
 from core import config
 
@@ -18,26 +17,26 @@ def read_list_lang() -> dict[str]:
 
 def get_content():
     return html.Div([
-        #dbc.Toast(
+        # dbc.Toast(
         #    "Это уведомление",
         #    id="toast",
         #    is_open=False,
         #    header="Уведомление",
         #    duration=4000,  # Время отображения (в миллисекундах)
         #    style={"position": "fixed", "top": 20, "right": 20}
-        #),
+        # ),
         dcc.Store(id='uuid-store'),  # Хранение UUID
-        html.Div(style={'background-color': '#8f060a',
+        html.Div(style={'background-color': '#4d705c', #B22222
                         'height': '250px',
                         'justifyContent': 'center',
                         'width': '75vw',
                         },
                  children=[
-                     html.H2('asdadsad', style={'margin-top': '0px',
-                                                'text-align': 'center',
-                                                'padding': '10px',
-                                                'color': '#f6e4da'}),
-                     html.H2('asdadsad', style={
+                     html.H1('система перевода документов', style={'margin-top': '0px',
+                                                                                     'text-align': 'center',
+                                                                                     'padding': '1px',
+                                                                                     'color': '#f6e4da'}),
+                     html.P('Осуществление перевода текстов на разных языках', style={
                          'text-align': 'center',
                          'color': '#f6e4da'}),
                      html.Div(style={'display': 'flex',
@@ -84,6 +83,7 @@ def get_content():
                                               options=[
                                                   {'label': 'Английский', 'value': 'en'},
                                                   {'label': 'Русский', 'value': 'ru'},
+
                                               ],
                                               value='ru',
                                               placeholder='Выберите язык',
@@ -92,26 +92,44 @@ def get_content():
                                       ],
                                           style={'margin-bottom': '30px'})
                                   ]),
-
-                                  html.Button(
+                                  html.Div(
                                       children=[
-                                          html.Img(id='img_transl', src='./assets/translate-hover.svg',
-                                                   style={'height': '30px', 'marginRight': '10px'}),
-                                          'Перевести'
+                                          html.Button(
+                                              children=[
+                                                  html.Img(id='img_transl', src='./assets/translate-hover.svg',
+                                                           style={'height': '30px', 'marginRight': '10px'}),
+                                                  'Перевести'
+                                              ],
+                                              id='translate-button',
+                                              className='button',
+                                              style={
+                                                  'display': 'flex',
+                                                  'alignItems': 'center',
+                                                  'width': '120px',
+                                                  'height': '40px',
+                                                  'border': 'none',
+                                              #    'margin-bottom': '30px',
+                                                  'margin-left': '20px',
+                                                  'border-radius': '5px',
+                                                  'box-shadow': '1px 1px 5px black',
+                                                  'transition': 'transform 0.1s'
+                                              }),
+                                          dcc.Checklist(
+                                              id='checklist_base',
+                                              options=[
+                                                  {'label': 'base-модель', 'value': 'checked'}
+                                              ],
+                                              value=['checked'],
+                                              # Значения по умолчанию (пустой список означает, что флажок не установлен)
+                                              inline=True,
+                                              style={
+                                                     'margin-top': '10px',
+                                                     'margin-left': '15px'}
+                                          )
                                       ],
-                                      id='translate-button',
-                                      className='button',
-                                      style={
-                                          'display': 'flex',
-                                          'alignItems': 'center',
-                                          'width': '120px',
-                                          'height': '40px',
-                                          'border': 'none',
-                                          'margin-left': '20px',
-                                          'border-radius': '5px',
-                                          'box-shadow': '1px 1px 5px black',
-                                          'transition': 'transform 0.1s'
-                                      }),
+                                      style={'margin-top': '25px'}
+                                  )
+
                               ]),
                  ]),
 
@@ -119,9 +137,9 @@ def get_content():
                         'flexDirection': 'row',
                         'gap': '10px',
                         'height': '50vh',
-                        'margin': '100px auto',
+                        'margin': '10px auto',
                         'maxWidth': '1300px',
-                        'margin-top': '150px',
+                        'margin-top': '100px',
                         'background-color': '#f8f9fa',
                         'border': '2px solid lightgray',
                         'padding': '10px',
@@ -165,7 +183,12 @@ def get_content():
                                   placeholder='Здесь будет обработанный',
                                   readOnly=True,
                                   style={'width': '100%', 'height': '49.5vh', 'resize': 'none'}),
-                 ]),
+                 ]
+                 ),
+        html.P('Версия от 16.11.2024',
+               style={'margin-top': '10px',
+                      'text-align': 'center',
+                      'color': 'grey'}),
 
         dcc.Interval(
             id='interval-component',
@@ -173,5 +196,6 @@ def get_content():
             n_intervals=0
         ),
         dcc.Store(id='button-state', data={'disabled': False}),
+        dcc.Store(id='qaz'),
         html.Div(id='output-text'),
     ])
