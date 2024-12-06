@@ -49,6 +49,43 @@ load_dotenv()
 
 @app.callback(
     Output('output-text', 'children', allow_duplicate=True),
+    Input('save-button', 'n_clicks'),
+    State({'type': 'checkbox', 'index': ALL}, 'value'),
+    prevent_initial_call=True
+)
+def save_transl(n_clicks, chk_box):
+    if n_clicks > 0:
+        files_save = []
+        for i in range(len(chk_box)):
+            try:
+                files_save.append(chk_box[i][0])
+            except IndexError:
+                continue
+
+        for file in files_save:
+            return dcc.send_file(
+                f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.docx'
+            )
+            # if file.endswith(('docx', 'doc', 'odt', 'rtf', 'ppt', 'pptx')):
+            #    if os.path.exists(f'{settings.docs_directory}/{file}'):
+            #        os.remove(f'{settings.docs_directory}/{file}')
+            #    if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.docx'):
+            #        os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.docx')
+            #    if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.docx'):
+            #        os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.docx')
+        #
+        # if file.endswith(('pdf', 'txt')):
+        #    if os.path.exists(f'{settings.docs_directory}/{file}'):
+        #        os.remove(f'{settings.docs_directory}/{file}')
+        #    if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.txt'):
+        #        os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.txt')
+        #    if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.txt'):
+        #        os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.txt')
+        return ''
+
+
+@app.callback(
+    Output('output-text', 'children', allow_duplicate=True),
     Input('delete-button', 'n_clicks'),
     State({'type': 'checkbox', 'index': ALL}, 'value'),
     prevent_initial_call=True
@@ -61,7 +98,7 @@ def delete_transl(n_clicks, chk_box):
                 files_delete.append(chk_box[i][0])
             except IndexError:
                 continue
-        #        print(files_delete)
+
         for file in files_delete:
             if file.endswith(('docx', 'doc', 'odt', 'rtf', 'ppt', 'pptx')):
                 if os.path.exists(f'{settings.docs_directory}/{file}'):
@@ -89,19 +126,12 @@ def delete_transl(n_clicks, chk_box):
 )
 def save_file(contents, filenames):
     if contents is not None:
-        # Для каждого файла
-        messages = []
+
         for content, filename in zip(contents, filenames):
-            # Разделение содержимого файла
             content_type, content_string = content.split(',')
-
-            # Декодирование содержимого
             decoded = base64.b64decode(content_string)
-
-            # Генерация пути для сохранения файла с оригинальным именем
             file_path = os.path.join(DIRECTORY_PATH, filename)
 
-            # Запись содержимого в файл
             with open(file_path, 'wb') as f:
                 f.write(decoded)
 
@@ -109,27 +139,30 @@ def save_file(contents, filenames):
 
 
 @app.callback(
+    Output('checkbox-store', 'data'),
     Output({'type': 'checkbox', 'index': ALL}, 'value'),
     Input('btn-select-files', 'n_clicks'),
     State({'type': 'checkbox', 'index': ALL}, 'value'),
     State('input_dir', 'value'),
+    State('checkbox-store', 'data'),
     prevent_initial_call=True
 )
-def select_unselect(n_clicks: int, chk_box: list, dir_path: str):
+def select_unselect(n_clicks: int, chk_box: list, dir_path: str, checkbox_states):
     if n_clicks > 0:
-        if not n_clicks % 2 == 0:
-            for i in range(len(chk_box)):
-                chk_box[i] = []
+        files = os.listdir(dir_path)
+        # Получаем список всех файлов, которые могут быть выбраны
+        selectable_files = [file for file in files if not file.endswith(('_translated.docx', '_translated_done.docx',
+                                                                         '_translated.txt', '_translated_done.txt')) and not os.path.isdir(
+            os.path.join(DIRECTORY_PATH, file))]
+
+        if n_clicks % 2 == 0:
+            # Если четное нажатие, снимаем все галочки
+            return [], [[] for _ in selectable_files]
         else:
-            files = os.listdir(dir_path)
-            chk_selected = [[file] for file in files if not file.endswith(('_translated.docx', '_translated_done.docx',
-                                                                           '_translated.txt',
-                                                                           '_translated_done.txt')) and not os.path.isdir(
-                os.path.join(DIRECTORY_PATH, file))]
-            return chk_selected
-
-        return chk_box
-
+            # Если нечетное нажатие, выбираем все файлы
+            chk_selected = [[file] for file in selectable_files]
+            return chk_selected, chk_selected
+    return checkbox_states, chk_box
 
 @app.callback(
     Output('text_in', 'value', allow_duplicate=True),
@@ -292,9 +325,10 @@ def update_text_in(text_in_state):
     Input('refresh-button', 'n_clicks'),
     State('url', 'href'),
     State('input_dir', 'value'),
+    State('checkbox-store', 'data'),
     prevent_initial_call=True
 )
-def refresh_docs(n_interv: int, n_click: int | None, href: str, dir_docs: str):  # , n_int: int):
+def refresh_docs(n_interv: int, n_click: int | None, href: str, dir_docs: str, checkbox_states: list):
     global DIRECTORY_PATH
 
     if n_click:
@@ -335,13 +369,10 @@ def refresh_docs(n_interv: int, n_click: int | None, href: str, dir_docs: str): 
             set_key('.env', 'DOCS_DIRECTORY', dir_docs)
             DIRECTORY_PATH = dir_docs
             settings.docs_directory = dir_docs
-            # Пока что нащел радикальное решение просто перезапустить приложение
-            # os.execl(sys.executable, sys.executable, *sys.argv)
-            # print(f'create {DIRECTORY_PATH}')
-            # print(f'create2 {settings.docs_directory}')
 
-            return create_links(DIRECTORY_PATH), settings.docs_directory, '/'
-    return create_links(DIRECTORY_PATH), dash.no_update, dash.no_update
+            return create_links(DIRECTORY_PATH, checkbox_states), settings.docs_directory, '/'
+
+    return create_links(DIRECTORY_PATH, checkbox_states), dash.no_update, dash.no_update
 
 
 def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, type_part: str, lang_dst: str, base_m):
@@ -417,19 +448,6 @@ def docx_processing(file_name: str, uuid: str, lang_dst: str, base_m, tmp_path: 
     add_queue_docx_part(old_paragraphs, uuid, count_name, only_name, 'text', lang_dst, base_m)
 
 
-# @app.callback(
-#    Output('output-text', 'value'),
-#    Input({'type': 'checkbox', 'index': ALL}, 'value')
-# )
-# def display_message(selected_values):
-#    # selected_values будет содержать список всех выбранных значений чекбоксов
-#    selected_files = [file for file in selected_values if file]  # Фильтруем выбранные файлы
-#    #    print(selected_files)
-#    if selected_files:
-#        return f"Вы выбрали: {', '.join(selected_files)}"
-#    return "Файлы не выбраны."
-
-
 @app.callback(
     Output('all-button', 'disabled'),
     Input('all-button', 'n_clicks'),
@@ -447,10 +465,7 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
 
     pipeline = redis_db.pipeline()
     load_dotenv('.env')
-    # DIRECTORY_PATH = os.environ.get('DOCS_DIRECTORY')
     DIRECTORY_PATH = settings.docs_directory
-    # print(f'but {DIRECTORY_PATH}')
-    # print(f'but2 {settings.docs_directory}')
 
     files_translate = []
     if n_clicks > 0 and not is_disabled:
@@ -616,7 +631,6 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
 
 @app.callback(
     Output('text_in', 'value'),
-    Output('links-list', 'children', allow_duplicate=True),
     Output('text_out', 'value', allow_duplicate=True),
     Output('input_dir', 'value', allow_duplicate=True),
     Input('url', 'href'),
@@ -625,13 +639,10 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
 def select_ref(href: str, pathname: str):
     transl_str = ''
 
-    links = create_links(DIRECTORY_PATH)
-
     if href == f'/':
-        return "", links, transl_str, DIRECTORY_PATH
+        return "", transl_str, DIRECTORY_PATH
 
     try:
-        # file_name = pathname[1:].replace('%20', ' ')
         file_name = urllib.parse.unquote(pathname[1:])
         file_ext = file_name[file_name.rfind('.') + 1:]
         file_path = os.path.join(DIRECTORY_PATH, file_name)
@@ -701,7 +712,7 @@ def select_ref(href: str, pathname: str):
 
         else:
             data_str = f'Файл {file_name} не поддерживается'
-        return data_str, links, transl_str, DIRECTORY_PATH
+        return data_str, transl_str, DIRECTORY_PATH
     except Exception as e:
         return f'Ошибка при обработке файла: {str(e)}'
 
@@ -710,8 +721,6 @@ def select_ref(href: str, pathname: str):
 if __name__ == '__main__':
     load_dotenv('.env')
     os.environ.get('DOCS_DIRECTORY')
-    # print(f'name {DIRECTORY_PATH}')
-    # DIRECTORY_PATH = os.environ.get('DOCS_DIRECTORY')
 
     if settings.clear_queue:
         redis_db.delete('message_queue')

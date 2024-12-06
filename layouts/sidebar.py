@@ -17,6 +17,7 @@ def get_sidebar(path_dir: str):
     return html.Div(
         [
             dcc.Store(id='file-store', data=[]),
+            dcc.Store(id='checkbox-store', data=[]),
             html.Div(id='checkbox-container'),
             html.Div(children=[
                 html.H2("Ссылки на файлы", style={'color': '#4d705c'}),
@@ -95,6 +96,22 @@ def get_sidebar(path_dir: str):
                                                   }),
                              multiple=True  # разрешить загрузку только одного файла
                          ),
+                         html.Button('', id="save-button",
+                                     n_clicks=0,
+                                     className='button',
+                                     style={
+                                         'display': 'flex',
+                                         'width': '25px',
+                                         'height': '25px',
+                                         'border': 'none',
+                                         'margin-left': '20px',
+                                         'border-radius': '5px',
+                                         'background': 'none',
+                                         'background-image': "url('./assets/save.svg')",
+                                         'background-size': 'cover',
+                                         'background-repeat': 'no-repeat',
+                                         'transition': 'transform 0.1s'
+                                     }),
                          html.Button('', id='refresh-button',
                                      className='button',
                                      style={
@@ -130,7 +147,7 @@ def get_sidebar(path_dir: str):
                      ]
                      ),
             html.Hr(),
-            html.Ul(create_links(path_dir), style={'list-style': 'none'}, id='links-list')
+            html.Ul(create_links(path_dir, []), style={'list-style': 'none'}, id='links-list')
         ],
         style={
             'width': '25vw',  # Ширина боковой панели

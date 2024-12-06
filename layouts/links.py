@@ -3,7 +3,7 @@ import os
 from dash import html, dcc
 
 
-def create_links(dir_path: str) -> list:
+def create_links(dir_path: str, checkbox_states: list) -> list:
     files = os.listdir(dir_path)
 
     links = []
@@ -31,16 +31,21 @@ def create_links(dir_path: str) -> list:
             else:
                 style_links['color'] = '#E0115F'
 
+            is_checked = [file] in checkbox_states
+
             links.append(html.Li(
                 children=[
                     html.Div(
                         children=[
                             dcc.Checklist(
                                 options=[{'label': ' ', 'value': file}],  # Без метки, только галочка
-                                value=[file],  # Галочка выбрана по умолчанию
+                                value=[file] if is_checked else [],
+                                #value=[],  # Галочка выбрана по умолчанию
                                 id={'type': 'checkbox', 'index': file},  # ID для каждого чекбокса
                                 inline=True,  # Горизонтальное расположение
-                                style={'marginRight': '10px'}
+                                style={'marginRight': '10px'},
+                                persistence=True,  # Сохраняйте состояние между сессиями
+                                persistence_type='memory'  # Храните в памяти
                             ),
                             dcc.Link(children=[
                                 html.Img(src=f'./assets/{file_ext}.svg',
