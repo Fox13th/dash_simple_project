@@ -114,8 +114,9 @@ def send_message(conn, message: str, docx: bool):
             case '_txt':
 
                 f_path = os.path.join(settings.docs_directory, file_name)
-                if os.path.exists(os.path.join('./temp', f'{file_name[:-15]}.txt')):
-                    orig_file = os.path.join('./temp', f'{file_name[:-15]}.txt')
+                orig_f_name = f'{file_name[:-15]}.txt'
+                if os.path.exists(f'./temp/{orig_f_name}'):
+                    orig_file = f'./temp/{orig_f_name}'
                 else:
                     orig_file = os.path.join(settings.docs_directory, f'{file_name[:-15]}.txt')
 
@@ -124,7 +125,7 @@ def send_message(conn, message: str, docx: bool):
 
                 with open(f_path, 'r', encoding='utf-8') as f_read:
                     line_count = sum(1 for line in f_read)
-                #print(line_count)
+
                 with open(orig_file, 'rb') as f:
                     raw_data = f.read()
                     result = chardet.detect(raw_data)
@@ -132,7 +133,10 @@ def send_message(conn, message: str, docx: bool):
 
                 with open(orig_file, 'r', encoding=encoding) as f_read:
                     line_count_orig = sum(1 for line in f_read)
-                #print(line_count_orig)
+
+                with open(f'{settings.docs_directory}/{orig_f_name}.log', 'w', encoding='utf-8') as f_log:
+                    f_log.write(str(int(line_count / line_count_orig * 100)))
+
                 if line_count >= line_count_orig:
                     file_pth = pathlib.Path(os.path.join(settings.docs_directory, file_name))
                     file_pth.rename(os.path.join(settings.docs_directory, f'{file_name[:-4]}_done.txt'))

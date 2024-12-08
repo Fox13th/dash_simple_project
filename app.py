@@ -4,7 +4,6 @@ import os
 import shutil
 import tempfile
 import threading
-import time
 import urllib
 import uuid
 import zipfile
@@ -125,6 +124,8 @@ def delete_transl(n_clicks, chk_box):
             if file.endswith(('pdf', 'txt')):
                 if os.path.exists(f'{settings.docs_directory}/{file}'):
                     os.remove(f'{settings.docs_directory}/{file}')
+                if os.path.exists(f'{settings.docs_directory}/{file[:-3]}log'):
+                    os.remove(f'{settings.docs_directory}/{file[:-3]}log')
                 if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.txt'):
                     os.remove(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated.txt')
                 if os.path.exists(f'{settings.docs_directory}/{file[:file.rfind('.')]}_translated_done.txt'):
@@ -250,7 +251,7 @@ def translate_text(mark: str, target_language: str, uuid_value: str, button_stat
         for paragraph in paragraphs:
 
             if len(auto_detect) > 0:
-                lang_parag = LangDetect().detection(paragraph)
+                lang_parag = l_det.detection(paragraph)
                 lang_src = lang_parag['language']
             else:
                 lang_src = target_language
@@ -392,6 +393,8 @@ def refresh_docs(n_interv: int, n_click: int | None, href: str, dir_docs: str, c
 
 
 def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, type_part: str, lang_dst: str, base_m):
+    pipe = redis_db.pipeline()
+
     for i in range(len(part_doc)):
         if type_part == 'text':
             text_doc = part_doc[i].text
@@ -400,9 +403,9 @@ def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, t
 
         if type_part == 'tabl':
             txt_cell = part_doc[i][part_doc[i].find('text:') + 5:]
-            lang_old = LangDetect().detection(txt_cell)
+            lang_old = l_det.detection(txt_cell)
         else:
-            lang_old = LangDetect().detection(text_doc)
+            lang_old = l_det.detection(text_doc)
 
         if len(lang_old['language']) == 2:
             lang_src = f'{lang_old['language']} '
@@ -423,11 +426,10 @@ def add_queue_docx_part(part_doc: list, uuid: str, name_count: int, name: str, t
         head_space = ""
         for j in range(30 - worked_space):
             head_space += " "
-        # изменить
-        # f'{uuid_value}{lang_code_from}{lang_space}{lang_code_to}{lang_space}f{head_space}{paragraph}')
+
         string_to_send = f'{uuid}{name_count}{name}{i}{type_part}{lang_code_from}{lang_space}{lang_code_to}{lang_space}{base_m}{head_space}{text_doc}'
-        redis_db.rpush('docx_queue', string_to_send)
-        time.sleep(0.1)
+        pipe.rpush('docx_queue', string_to_send)
+    pipe.execute()
 
 
 def docx_processing(file_name: str, uuid: str, lang_dst: str, base_m, tmp_path: str = DIRECTORY_PATH):
@@ -447,12 +449,12 @@ def docx_processing(file_name: str, uuid: str, lang_dst: str, base_m, tmp_path: 
             count_name += " "
 
     copy_file_name = os.path.join(DIRECTORY_PATH, only_name)
-    # print(copy_file_name)
+
     if not tmp_path == './temp':
         tmp_path = settings.docs_directory
 
     shutil.copy(os.path.join(tmp_path, file_name), copy_file_name)
-    # print('1')
+
     old_paragraphs = DocxReader(method=2).file_read(copy_file_name)
     old_header, old_footer = DocxReader(method=2).colontituls_read(copy_file_name)
     old_table, old_n_table = DocxReader(method=2).table_read(copy_file_name)
@@ -462,6 +464,17 @@ def docx_processing(file_name: str, uuid: str, lang_dst: str, base_m, tmp_path: 
     add_queue_docx_part(old_table, uuid, count_name, only_name, 'tabl', lang_dst, base_m)
     add_queue_docx_part(old_n_table, uuid, count_name, only_name, 'tabl', lang_dst, base_m)
     add_queue_docx_part(old_paragraphs, uuid, count_name, only_name, 'text', lang_dst, base_m)
+
+
+@app.callback(
+    Output('output-text', 'children', allow_duplicate=True),
+    Input('queue-clear', 'n_clicks'),
+    prevent_initial_call=True
+)
+def clear_queue(n_clicks: int):
+    if n_clicks > 0:
+        redis_db.delete('docx_queue')
+    return dash.no_update
 
 
 @app.callback(
@@ -479,7 +492,6 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                    base_model):
     global DIRECTORY_PATH
 
-    pipeline = redis_db.pipeline()
     load_dotenv('.env')
     DIRECTORY_PATH = settings.docs_directory
 
@@ -526,7 +538,7 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                         # print(txt_lines)
 
                         for i_line, line in enumerate(txt_lines):
-                            lang_old = LangDetect().detection(line.replace('\n', ''))
+                            lang_old = l_det.detection(line.replace('\n', ''))
 
                             if line == "":
                                 line = "<%!@#emt#@!%>"
@@ -600,6 +612,9 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                         docx_processing(file_name, uuid_value, lang_dst, b_model, )
 
                 elif file_ext == 'txt' and not file_name.endswith(('_translated.txt', '_translated_done.txt')):
+
+                    pipeline = redis_db.pipeline()
+
                     only_name = f'{file_name[:file_name.rfind('.')]}_translated.txt'
                     only_name_done = f'{file_name[:file_name.rfind('.')]}_translated_done.txt'
 
@@ -633,7 +648,8 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
 
                             # f'{uuid_value}{lang_code_from}{lang_space}{lang_code_to}{lang_space}f{head_space}{paragraph}')
                             string_to_send = f'{uuid_value}{count_name}{only_name}{i_line}_txt{lang_code_from}{lang_space}{lang_code_to}{lang_space}{b_model}{head_space}{line}'
-                            redis_db.rpush('docx_queue', string_to_send)
+                            pipeline.rpush('docx_queue', string_to_send)
+                        pipeline.execute()
 
             except Exception as err:
                 logging.error(f'Возникла ошибка при обрабработки документа: {err}')
@@ -737,6 +753,7 @@ def select_ref(href: str, pathname: str):
 if __name__ == '__main__':
     load_dotenv('.env')
     os.environ.get('DOCS_DIRECTORY')
+    l_det = LangDetect()
 
     if settings.clear_queue:
         redis_db.delete('message_queue')

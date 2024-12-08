@@ -33,10 +33,25 @@ def create_links(dir_path: str, checkbox_states: list) -> list:
 
             is_checked = [file] in checkbox_states
 
+            style_progress = {
+                'color': '#ffa500',
+                'marginRight': '10px'
+                }
+            if os.path.exists(f'{file_path[:-3]}log'):
+                with open(f'{file_path[:-3]}log', 'r', encoding='utf-8') as f_read:
+                    progress_str = f'{f_read.readline()}%'
+                    if progress_str == '100%':
+                        style_progress['color'] = 'green'
+            else:
+                progress_str = ''
+
             links.append(html.Li(
                 children=[
                     html.Div(
                         children=[
+                            html.Div(id=f'progress_{file}',
+                                     children=progress_str.replace('\n', ''),
+                                     style=style_progress),
                             dcc.Checklist(
                                 options=[{'label': ' ', 'value': file}],  # Без метки, только галочка
                                 value=[file] if is_checked else [],
@@ -61,7 +76,8 @@ def create_links(dir_path: str, checkbox_states: list) -> list:
                     )
                 ],
 
-                id=f'li_ref',
+                #id=f'li_ref',
+                className='li_ref',
                 style={
                     'transition': 'transform .6s ease'
                 }),

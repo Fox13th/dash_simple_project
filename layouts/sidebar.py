@@ -47,6 +47,22 @@ def get_sidebar(path_dir: str):
                                     }),
                     ]
                 ),
+                html.Button('', id='queue-clear',
+                            className='button',
+                            style={
+                                'display': 'flex',
+                                'width': '55px',
+                                'height': '55px',
+                                'border': 'none',
+                                'margin-left': '20px',
+                                'border-radius': '40px',
+                                'background': 'none',
+                                'background-image': "url('./assets/stop.svg')",
+                                'background-size': 'cover',
+                                'background-repeat': 'no-repeat',
+
+                                'transition': 'transform 0.1s'
+                            }),
 
             ], style={'display': 'flex',
                       'flexDirection': 'row',
@@ -55,8 +71,8 @@ def get_sidebar(path_dir: str):
                       }),
             html.Div(style={'display': 'flex',
                             'flexDirection': 'row',
-                            'alignItems': 'center',
-                            'justifyContent': 'center',
+                            'alignItems': 'left',
+                            'justifyContent': 'left',
                             },
                      children=[
                          html.Button('', id="btn-select-files",
@@ -67,8 +83,8 @@ def get_sidebar(path_dir: str):
                                          'width': '20px',
                                          'height': '20px',
                                          'border': 'none',
-                                         # 'margin-left': '10px',
-                                         'margin-right': '40px',
+                                         'margin-left': '40px',
+                                         #'margin-right': '40px',
                                          'border-radius': '5px',
                                          'background': 'none',
                                          'background-image': "url('./assets/select.svg')",
@@ -76,7 +92,7 @@ def get_sidebar(path_dir: str):
                                          'background-repeat': 'no-repeat',
                                          'transition': 'transform 0.1s'
                                      }),
-                         dcc.Input(id='input_dir', value=path_dir, style={'width': '195px'}),
+                         dcc.Input(id='input_dir', value=path_dir, style={'width': '195px', 'display': 'none'}),
                          dcc.Upload(
                              id='upload-data',
                              children=html.Button('', id="btn-select-dir",
@@ -116,7 +132,7 @@ def get_sidebar(path_dir: str):
                          html.Button('', id='refresh-button',
                                      className='button',
                                      style={
-                                         'display': 'flex',
+                                         'display': 'none',
                                          'width': '25px',
                                          'height': '25px',
                                          'border': 'none',

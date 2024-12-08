@@ -17,7 +17,7 @@ body {
     color: #00a86b;
 }
 
-#li_ref:hover {
+.li_ref:hover {
     transform: scale(1.05);
 }
 

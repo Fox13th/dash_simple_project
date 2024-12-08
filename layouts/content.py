@@ -26,13 +26,13 @@ def get_content():
         #    style={"position": "fixed", "top": 20, "right": 20}
         # ),
         dcc.Store(id='uuid-store'),  # Хранение UUID
-        html.Div(style={'background-color': '#4d705c', #B22222
+        html.Div(style={'background-color': '#4d705c',  # B22222
                         'height': '250px',
                         'justifyContent': 'center',
                         'width': '75vw',
                         },
                  children=[
-                     html.H1('система перевода документов', style={'margin-top': '0px',
+                     html.H1('(SDT) - подсистема перевода документов', style={'margin-top': '0px',
                                                                                      'text-align': 'center',
                                                                                      'padding': '1px',
                                                                                      'color': '#f6e4da'}),
@@ -108,7 +108,7 @@ def get_content():
                                                   'width': '120px',
                                                   'height': '40px',
                                                   'border': 'none',
-                                              #    'margin-bottom': '30px',
+                                                  #    'margin-bottom': '30px',
                                                   'margin-left': '20px',
                                                   'border-radius': '5px',
                                                   'box-shadow': '1px 1px 5px black',
@@ -123,8 +123,8 @@ def get_content():
                                               # Значения по умолчанию (пустой список означает, что флажок не установлен)
                                               inline=True,
                                               style={
-                                                     'margin-top': '10px',
-                                                     'margin-left': '15px'}
+                                                  'margin-top': '10px',
+                                                  'margin-left': '15px'}
                                           )
                                       ],
                                       style={'margin-top': '25px'}
@@ -185,7 +185,7 @@ def get_content():
                                   style={'width': '100%', 'height': '49.5vh', 'resize': 'none'}),
                  ]
                  ),
-        html.P('Версия от 16.11.2024',
+        html.P('Версия от 08.12.2024',
                style={'margin-top': '10px',
                       'text-align': 'center',
                       'color': 'grey'}),
