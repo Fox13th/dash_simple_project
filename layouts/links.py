@@ -12,8 +12,8 @@ def create_links(dir_path: str, checkbox_states: list) -> list:
         not_end = ('_translated.docx', '_translated.txt', '_translated_done.txt', '_translated_done.docx')
         if file_ext in ['doc', 'docx', 'pdf', 'txt', 'odt', 'rtf', 'ppt', 'pptx'] and not file.endswith(not_end):
             file_path = os.path.join(dir_path, file)
-            if file_ext == 'docx':
-                file_ext = 'doc'
+            #if file_ext == 'docx':
+                #file_ext = 'doc'
             style_links = {
                 'display': 'flex',
                 'alignItems': 'center',
@@ -22,11 +22,11 @@ def create_links(dir_path: str, checkbox_states: list) -> list:
 
             if (os.path.exists(os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.docx')) and file_ext in [
                 'docx', 'doc', 'odt', 'rtf', 'ppt', 'pptx']) or (os.path.exists(
-                os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.txt')) and file_ext in ['txt', 'pdf']):
+                os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.txt')) and file_ext in ['txt', 'docx', 'pdf']):
                 style_links['color'] = '#ffa500'
             elif (os.path.exists(os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated_done.docx')) and file_ext in [
                 'docx', 'doc', 'pdf', 'odt', 'rtf', 'ppt', 'pptx']) or (os.path.exists(
-                os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated_done.txt')) and file_ext in ['txt', 'pdf']):
+                os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated_done.txt')) and file_ext in ['txt', 'docx', 'pdf']):
                 style_links['color'] = 'green'
             else:
                 style_links['color'] = '#E0115F'
@@ -37,13 +37,16 @@ def create_links(dir_path: str, checkbox_states: list) -> list:
                 'color': '#ffa500',
                 'marginRight': '10px'
                 }
-            if os.path.exists(f'{file_path[:-3]}log'):
-                with open(f'{file_path[:-3]}log', 'r', encoding='utf-8') as f_read:
+            if os.path.exists(f'{file_path[:file_path.rfind(".") + 1]}log'):
+                with open(f'{file_path[:file_path.rfind(".") + 1]}log', 'r', encoding='utf-8') as f_read:
                     progress_str = f'{f_read.readline()}%'
                     if progress_str == '100%':
                         style_progress['color'] = 'green'
             else:
                 progress_str = ''
+                
+            if file_ext == 'docx':
+                file_ext = 'doc'
 
             links.append(html.Li(
                 children=[
