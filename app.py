@@ -19,7 +19,7 @@ from flask import Flask
 from layouts.content import get_content
 from layouts.links import create_links
 from layouts.sidebar import get_sidebar
-from services.converters import PDF2DOCX, DOC2DOCX, ODT2DOCX, RTF2DOCX, PPTX2DOCX, PDF2TXT
+from services.converters import PDF2DOCX, DOC2DOCX, ODT2DOCX, RTF2DOCX, PPTX2DOCX, PDF2TXT, DOCX2TXT
 from services.file_reader import TXTReader, DocxReader, PDFReader
 from services.lang_detect import LangDetect
 from sockets.client_sock import client_program
@@ -515,7 +515,7 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                 b_model = ' '
 
             try:
-                if file_ext in ['pdf', 'docx']:
+                if file_ext in ['pdf', 'docx', 'doc', 'odt', 'rtf', 'ppt', 'pptx']:
                     if not os.path.exists('./temp'):
                         os.mkdir('./temp')
 
@@ -524,12 +524,21 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                     only_name = f'{file_name[:file_name.rfind('.')]}_translated.txt'
                     only_name_done = f'{file_name[:file_name.rfind('.')]}_translated_done.txt'
 
-                    if not os.path.exists(f'{DIRECTORY_PATH}/{only_name}') or not os.path.exists(
+                    if not os.path.exists(f'{DIRECTORY_PATH}/{only_name}') and not os.path.exists(
                             f'{DIRECTORY_PATH}/{only_name_done}'):
-                        if file_ext == 'pdf':
-                            PDF2TXT().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
-                        else:
-                            DOCX2TXT().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
+                        match file_ext:
+                            case 'pdf':
+                                PDF2TXT().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
+                            case 'docx':
+                                DOCX2TXT().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
+                            case 'doc':
+                                DOC2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
+                            case 'odt':
+                                ODT2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
+                            case 'rtf':
+                                RTF2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
+                            case 'ppt' | 'pptx':
+                                PPTX2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
 
                         count_name = str(len(only_name))
                         if len(count_name) < 3:
@@ -562,49 +571,49 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                             string_to_send = f'{uuid_value}{count_name}{only_name}{i_line}_txt{lang_code_from}{lang_space}{lang_code_to}{lang_space}{b_model}{head_space}{line}'
                             redis_db.rpush('docx_queue', string_to_send)
 
-                elif file_ext == 'doc':
-
-                    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
-                    if not os.path.exists(converted_path):
-                        DOC2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
-
-                    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
-                            os.path.join(DIRECTORY_PATH, only_name_done)):
-                        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
-                                        './temp')
-
-                elif file_ext == 'odt':
-
-                    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
-                    if not os.path.exists(converted_path):
-                        ODT2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
-
-                    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
-                            os.path.join(DIRECTORY_PATH, only_name_done)):
-                        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
-                                        './temp')
-
-                elif file_ext == 'rtf':
-
-                    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
-                    if not os.path.exists(converted_path):
-                        RTF2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
-
-                    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
-                            os.path.join(DIRECTORY_PATH, only_name_done)):
-                        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
-                                        './temp')
-
-                elif file_ext == 'ppt' or file_ext == 'pptx':
-
-                    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
-                    if not os.path.exists(converted_path):
-                        PPTX2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
-
-                    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
-                            os.path.join(DIRECTORY_PATH, only_name_done)):
-                        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
-                                        './temp')
+                #elif file_ext == 'doc':
+#
+                #    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
+                #    if not os.path.exists(converted_path):
+                #        DOC2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
+#
+                #    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
+                #            os.path.join(DIRECTORY_PATH, only_name_done)):
+                #        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
+                #                        './temp')
+#
+                #elif file_ext == 'odt':
+#
+                #    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
+                #    if not os.path.exists(converted_path):
+                #        ODT2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
+#
+                #    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
+                #            os.path.join(DIRECTORY_PATH, only_name_done)):
+                #        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
+                #                        './temp')
+#
+                #elif file_ext == 'rtf':
+#
+                #    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
+                #    if not os.path.exists(converted_path):
+                #        RTF2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
+#
+                #    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
+                #            os.path.join(DIRECTORY_PATH, only_name_done)):
+                #        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
+                #                        './temp')
+#
+                #elif file_ext == 'ppt' or file_ext == 'pptx':
+#
+                #    converted_path = f'./temp/{file_name[:file_name.rfind('.')]}.docx'
+                #    if not os.path.exists(converted_path):
+                #        PPTX2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
+#
+                #    if not os.path.exists(os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
+                #            os.path.join(DIRECTORY_PATH, only_name_done)):
+                #        docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
+                #                        './temp')
 
                 #elif file_ext == 'docx':
 
@@ -708,18 +717,26 @@ def select_ref(href: str, pathname: str):
                 transl_str = TXTReader(method=1).file_read(transl_path_done)
 
         elif file_ext == 'docx':
-            data_str = DocxReader(method=1).file_read(file_path)
+            #data_str = DocxReader(method=1).file_read(file_path)
+
+            if not os.path.exists(f'./temp/{file_name[:file_name.rfind(".") + 1]}txt'):
+                data_str = DocxReader(method=1).file_read(file_path)
+            else:
+                data_str = TXTReader(method=1).file_read(f'./temp/{file_name[:-3]}txt')
+
             transl_path = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.txt')
             transl_path_done = os.path.join(DIRECTORY_PATH,
                                             f'{file_name[:file_name.rfind('.')]}_translated_done.txt')
 
             if os.path.exists(transl_path):
-                transl_str = DocxReader(method=1).file_read(transl_path)
+                #transl_str = DocxReader(method=1).file_read(transl_path)
+                transl_str = TXTReader(method=1).file_read(transl_path)
             elif os.path.exists(transl_path_done):
-                transl_str = DocxReader(method=1).file_read(transl_path_done)
+                #transl_str = DocxReader(method=1).file_read(transl_path_done)
+                transl_str = TXTReader(method=1).file_read(transl_path_done)
 
         elif file_ext in ['doc', 'odt', 'rtf', 'ppt', 'pptx', 'pdf']:
-            converted_file = os.path.join(os.path.abspath('.'), 'temp', f'{file_name[:file_name.rfind('.')]}.docx')
+            converted_file = os.path.join(os.path.abspath('.'), 'temp', f'{file_name[:file_name.rfind('.')]}.txt') # тут поменял
             if not os.path.exists(converted_file):
 
                 match file_ext:
@@ -735,15 +752,15 @@ def select_ref(href: str, pathname: str):
                     case 'ppt' | 'pptx':
                         PPTX2DOCX().func_covert(f'{DIRECTORY_PATH}/{file_name}', './temp')
 
-            data_str = DocxReader(method=1).file_read(converted_file)
-            transl_path = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.docx')
+            data_str = TXTReader(method=1).file_read(converted_file)
+            transl_path = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.txt')
             transl_path_done = os.path.join(DIRECTORY_PATH,
-                                            f'{file_name[:file_name.rfind('.')]}_translated_done.docx')
+                                            f'{file_name[:file_name.rfind('.')]}_translated_done.txt')
 
             if os.path.exists(transl_path):
-                transl_str = DocxReader(method=1).file_read(transl_path)
+                transl_str = TXTReader(method=1).file_read(transl_path)
             elif os.path.exists(transl_path_done):
-                transl_str = DocxReader(method=1).file_read(transl_path_done)
+                transl_str = TXTReader(method=1).file_read(transl_path_done)
 
         else:
             data_str = f'Файл {file_name} не поддерживается'

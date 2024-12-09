@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 
 from pdf2docx import Converter
 
+from services.file_reader import DocxReader
+
 
 class FileConverter(ABC):
 
@@ -24,18 +26,20 @@ class PDF2TXT(FileConverter):
     def func_covert(self, scr_file: str, dst_file: str):
         try:
             # Запускаем команду pdftotext
-            result = subprocess.run(['pdftotext', '-enc', 'UTF-8', scr_file, dst_file], check=True, text=True, capture_output=True)
+            result = subprocess.run(['pdftotext', '-enc', 'UTF-8', scr_file, dst_file], check=True, text=True,
+                                    capture_output=True)
             # print(result.stdout)  # Выводим извлеченный текст
         except subprocess.CalledProcessError as e:
             print(f"Ошибка при извлечении текста: {e}")
         except FileNotFoundError:
             print("Не удалось найти исполняемый файл pdftotext. Убедитесь, что xpdf установлен и путь добавлен в PATH.")
         return result.stdout
-        
-        
+
+
 class DOCX2TXT(FileConverter):
-    def func_convert(self, scr_file: str, dst_file: str):
-        data_str = DocxReader(method=1).file_read(src_file)
+
+    def func_covert(self, scr_file: str, dst_file: str):
+        data_str = DocxReader(method=1).file_read(scr_file)
         with open(dst_file, 'w', encoding='utf-8') as f_write:
             f_write.write(data_str)
 
@@ -43,7 +47,8 @@ class DOCX2TXT(FileConverter):
 class DOC2DOCX(FileConverter):
 
     def func_covert(self, scr_file: str, dst_file: str) -> str:
-        name_file = scr_file[scr_file.rfind("\\") + 1:]
+        #name_file = scr_file[scr_file.rfind("\\") + 1:]
+        name_file = os.path.basename(scr_file)
         converted_doc_path = f'./temp/{name_file}x'
 
         if not os.path.isdir('./temp'):
@@ -51,12 +56,15 @@ class DOC2DOCX(FileConverter):
         if not os.path.exists(converted_doc_path):
             os.system(f'soffice --headless --convert-to docx "{scr_file}" --outdir "{dst_file}"')  # ./temp
 
-        return converted_doc_path
+        output_file_docx = DOCX2TXT().func_covert(converted_doc_path, f'{converted_doc_path[:-4]}txt')
+
+        return output_file_docx
 
 
 class ODT2DOCX(FileConverter):
     def func_covert(self, scr_file: str, dst_file: str) -> str:
-        name_file = scr_file[scr_file.rfind("\\") + 1:]
+        name_file = os.path.basename(scr_file)
+        print(name_file)
         converted_doc_path = f'./temp/{name_file[:-3]}docx'
 
         if not os.path.isdir('./temp'):
@@ -64,7 +72,8 @@ class ODT2DOCX(FileConverter):
         if not os.path.exists(converted_doc_path):
             os.system(f'soffice --headless --convert-to docx "{scr_file}" --outdir "{dst_file}"')
 
-        return converted_doc_path
+        output_file_docx = DOCX2TXT().func_covert(converted_doc_path, f'{converted_doc_path[:-4]}txt')
+        return output_file_docx
 
 
 class PPTX2DOCX(FileConverter):
@@ -74,10 +83,10 @@ class PPTX2DOCX(FileConverter):
 
         if not scr_file[-3:] == "ppt":
             converted_pdf_path = f'./temp/{name_file[:-4]}pdf'
-            converted_doc_path = f'./temp/{name_file[:-4]}docx'
+            converted_doc_path = f'./temp/{name_file[:-4]}txt'
         else:
             converted_pdf_path = f'./temp/{name_file[:-3]}pdf'
-            converted_doc_path = f'./temp/{name_file[:-3]}docx'
+            converted_doc_path = f'./temp/{name_file[:-3]}txt'
 
         if not os.path.isdir('./temp'):
             os.mkdir('./temp')
@@ -85,7 +94,8 @@ class PPTX2DOCX(FileConverter):
         if not os.path.exists(converted_doc_path):
             os.system(f'soffice --headless --convert-to pdf "{scr_file}" --outdir "{dst_file}"')
 
-        output_file_docx = PDF2DOCX().func_covert(converted_pdf_path, converted_doc_path)
+        # output_file_docx = PDF2DOCX().func_covert(converted_pdf_path, converted_doc_path)
+        output_file_docx = PDF2TXT().func_covert(converted_pdf_path, converted_doc_path)
         return output_file_docx
 
 
@@ -93,7 +103,10 @@ class RTF2DOCX(FileConverter):
 
     def func_covert(self, scr_file: str, dst_file: str) -> str:
 
-        name_file = scr_file[scr_file.rfind("\\") + 1:]
+        #name_file = scr_file[scr_file.rfind("\\") + 1:]
+
+        name_file = os.path.basename(scr_file)
+
         converted_doc_path = f'./temp/{name_file[:-3]}docx'
 
         if not os.path.isdir('./temp'):
@@ -101,4 +114,6 @@ class RTF2DOCX(FileConverter):
         if not os.path.exists(converted_doc_path):
             os.system(f'soffice --headless --convert-to docx "{scr_file}" --outdir "{dst_file}"')
 
-        return converted_doc_path
+        output_file_docx = DOCX2TXT().func_covert(converted_doc_path, f'{converted_doc_path[:-4]}txt')
+
+        return output_file_docx
