@@ -31,6 +31,13 @@ class PDF2TXT(FileConverter):
         except FileNotFoundError:
             print("Не удалось найти исполняемый файл pdftotext. Убедитесь, что xpdf установлен и путь добавлен в PATH.")
         return result.stdout
+        
+        
+class DOCX2TXT(FileConverter):
+    def func_convert(self, scr_file: str, dst_file: str):
+        data_str = DocxReader(method=1).file_read(src_file)
+        with open(dst_file, 'w', encoding='utf-8') as f_write:
+            f_write.write(data_str)
 
 
 class DOC2DOCX(FileConverter):
