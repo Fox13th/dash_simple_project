@@ -515,7 +515,7 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                 b_model = ' '
 
             try:
-                if file_ext in ['pdf']:
+                if file_ext in ['pdf', 'docx']:
                     if not os.path.exists('./temp'):
                         os.mkdir('./temp')
 
@@ -526,7 +526,10 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
 
                     if not os.path.exists(f'{DIRECTORY_PATH}/{only_name}') or not os.path.exists(
                             f'{DIRECTORY_PATH}/{only_name_done}'):
-                        PDF2TXT().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
+                        if file_ext == 'pdf':
+                            PDF2TXT().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
+                        else:
+                            DOCX2TXT().func_covert(f'{DIRECTORY_PATH}/{file_name}', converted_path)
 
                         count_name = str(len(only_name))
                         if len(count_name) < 3:
@@ -603,13 +606,13 @@ def translate_docs(n_clicks: int, is_disabled: bool, uuid_value: str, input_dir:
                         docx_processing(f'{file_name[:file_name.rfind('.')]}.docx', uuid_value, lang_dst, b_model,
                                         './temp')
 
-                elif file_ext == 'docx':
+                #elif file_ext == 'docx':
 
-                    if (not file_name.endswith('_translated.docx') or not file_name.endswith(
-                            '_translated_done.docx')) and (not os.path.exists(
-                        os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
-                        os.path.join(DIRECTORY_PATH, only_name_done))):
-                        docx_processing(file_name, uuid_value, lang_dst, b_model, )
+                    #if (not file_name.endswith('_translated.docx') or not file_name.endswith(
+                #            '_translated_done.docx')) and (not os.path.exists(
+                #        os.path.join(DIRECTORY_PATH, only_name)) and not os.path.exists(
+                #        os.path.join(DIRECTORY_PATH, only_name_done))):
+                #        docx_processing(file_name, uuid_value, lang_dst, b_model, )
 
                 elif file_ext == 'txt' and not file_name.endswith(('_translated.txt', '_translated_done.txt')):
 
@@ -706,9 +709,9 @@ def select_ref(href: str, pathname: str):
 
         elif file_ext == 'docx':
             data_str = DocxReader(method=1).file_read(file_path)
-            transl_path = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.{file_ext}')
+            transl_path = os.path.join(DIRECTORY_PATH, f'{file_name[:file_name.rfind('.')]}_translated.txt')
             transl_path_done = os.path.join(DIRECTORY_PATH,
-                                            f'{file_name[:file_name.rfind('.')]}_translated_done.{file_ext}')
+                                            f'{file_name[:file_name.rfind('.')]}_translated_done.txt')
 
             if os.path.exists(transl_path):
                 transl_str = DocxReader(method=1).file_read(transl_path)
