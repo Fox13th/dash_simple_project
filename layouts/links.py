@@ -22,11 +22,11 @@ def create_links(dir_path: str, checkbox_states: list) -> list:
 
             if (os.path.exists(os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.docx')) and file_ext in [
                 'docx', 'doc', 'odt', 'rtf', 'ppt', 'pptx']) or (os.path.exists(
-                os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.txt')) and file_ext in ['txt', 'docx', 'pdf']):
+                os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated.txt')) and file_ext in ['txt', 'docx', 'pdf', 'doc', 'odt', 'rtf', 'ppt', 'pptx']):
                 style_links['color'] = '#ffa500'
             elif (os.path.exists(os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated_done.docx')) and file_ext in [
                 'docx', 'doc', 'pdf', 'odt', 'rtf', 'ppt', 'pptx']) or (os.path.exists(
-                os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated_done.txt')) and file_ext in ['txt', 'docx', 'pdf']):
+                os.path.join(dir_path, f'{file[:file.rfind('.')]}_translated_done.txt')) and file_ext in ['txt', 'docx', 'pdf', 'doc', 'odt', 'rtf', 'ppt', 'pptx']):
                 style_links['color'] = 'green'
             else:
                 style_links['color'] = '#E0115F'
